@@ -1,0 +1,164 @@
+chmod +x *.sh
+g++ -std=c++11 -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/image_opencv.cpp -o obj/image_opencv.o
+./src/image_opencv.cpp: In function ‘void draw_detections_cv_v3(mat_cv*, detection*, int, float, char**, image**, int, int)’:
+./src/image_opencv.cpp:896:23: warning: variable ‘rgb’ set but not used [-Wunused-but-set-variable]
+                 float rgb[3];
+                       ^~~
+./src/image_opencv.cpp: At global scope:
+./src/image_opencv.cpp:420:14: warning: ‘float get_pixel(image, int, int, int)’ defined but not used [-Wunused-function]
+ static float get_pixel(image m, int x, int y, int c)
+              ^~~~~~~~~
+g++ -std=c++11 -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/http_stream.cpp -o obj/http_stream.o
+./src/http_stream.cpp: In member function ‘bool JSON_sender::write(const char*)’:
+./src/http_stream.cpp:228:21: warning: unused variable ‘n’ [-Wunused-variable]
+                 int n = _write(client, outputbuf, outlen);
+                     ^
+./src/http_stream.cpp: In member function ‘bool MJPG_sender::write(const cv::Mat&)’:
+./src/http_stream.cpp:475:23: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+                 if (n < outlen)
+                     ~~^~~~~~~~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/gemm.c -o obj/gemm.o
+./src/gemm.c: In function ‘convolution_2d’:
+./src/gemm.c:2016:15: warning: unused variable ‘out_w’ [-Wunused-variable]
+     const int out_w = (w + 2 * pad - ksize) / stride + 1;    // output_width=input_width for stride=1 and pad=1
+               ^~~~~
+./src/gemm.c:2015:15: warning: unused variable ‘out_h’ [-Wunused-variable]
+     const int out_h = (h + 2 * pad - ksize) / stride + 1;    // output_height=input_height for stride=1 and pad=1
+               ^~~~~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/utils.c -o obj/utils.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/dark_cuda.c -o obj/dark_cuda.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/convolutional_layer.c -o obj/convolutional_layer.o
+./src/convolutional_layer.c: In function ‘resize_convolutional_layer’:
+./src/convolutional_layer.c:607:9: warning: unused variable ‘old_h’ [-Wunused-variable]
+     int old_h = l->h;
+         ^~~~~
+./src/convolutional_layer.c:606:9: warning: unused variable ‘old_w’ [-Wunused-variable]
+     int old_w = l->w;
+         ^~~~~
+./src/convolutional_layer.c: In function ‘forward_convolutional_layer’:
+./src/convolutional_layer.c:1015:32: warning: unused variable ‘t_intput_size’ [-Wunused-variable]
+                         size_t t_intput_size = binary_transpose_align_input(k, n, state.workspace, &l.t_bit_input, ldb_align, l.bit_align);
+                                ^~~~~~~~~~~~~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/list.c -o obj/list.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/image.c -o obj/image.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/activations.c -o obj/activations.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/im2col.c -o obj/im2col.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/col2im.c -o obj/col2im.o
+./src/col2im.c: In function ‘caffe_set’:
+./src/col2im.c:43:9: warning: implicit declaration of function ‘memset’ [-Wimplicit-function-declaration]
+         memset(Y, 0, sizeof(float) * N);  // NOLINT(caffe/alt_fn)
+         ^~~~~~
+./src/col2im.c:43:9: warning: incompatible implicit declaration of built-in function ‘memset’
+./src/col2im.c:43:9: note: include ‘<string.h>’ or provide a declaration of ‘memset’
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/blas.c -o obj/blas.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/crop_layer.c -o obj/crop_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/dropout_layer.c -o obj/dropout_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/maxpool_layer.c -o obj/maxpool_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/softmax_layer.c -o obj/softmax_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/data.c -o obj/data.o
+./src/data.c: In function ‘load_data_detection’:
+./src/data.c:940:75: warning: passing argument 1 of ‘basecfg’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+                 sprintf(buff, "aug_%d_%d_%s_%d", random_index, i, basecfg(filename), random_gen());
+                                                                           ^~~~~~~~
+In file included from ./src/data.c:2:0:
+./src/utils.h:20:7: note: expected ‘char *’ but argument is of type ‘const char *’
+ char *basecfg(char *cfgfile);
+       ^~~~~~~
+./src/data.c:881:19: warning: unused variable ‘scale’ [-Wunused-variable]
+             float scale = rand_precalc_random(.25, 2, r_scale); // unused currently
+                   ^~~~~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/matrix.c -o obj/matrix.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/network.c -o obj/network.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/connected_layer.c -o obj/connected_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/cost_layer.c -o obj/cost_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/parser.c -o obj/parser.o
+./src/parser.c: In function ‘parse_convolutional’:
+./src/parser.c:170:20: warning: comparison between pointer and integer
+     if(share_layer > -1) share_layer = &net.layers[share_index];
+                    ^
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/option_list.c -o obj/option_list.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/darknet.c -o obj/darknet.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/detection_layer.c -o obj/detection_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/captcha.c -o obj/captcha.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/route_layer.c -o obj/route_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/writing.c -o obj/writing.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/box.c -o obj/box.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/nightmare.c -o obj/nightmare.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/normalization_layer.c -o obj/normalization_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/avgpool_layer.c -o obj/avgpool_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/coco.c -o obj/coco.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/dice.c -o obj/dice.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/yolo.c -o obj/yolo.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/detector.c -o obj/detector.o
+./src/detector.c: In function ‘train_detector’:
+./src/detector.c:52:16: warning: unused variable ‘names’ [-Wunused-variable]
+         char **names = get_labels_custom(name_list, &names_size);
+                ^~~~~
+./src/detector.c: In function ‘validate_detector_map’:
+./src/detector.c:1044:15: warning: unused variable ‘class_recall’ [-Wunused-variable]
+         float class_recall = (float)tp_for_thresh_per_class[i] / ((float)tp_for_thresh_per_class[i] + (float)(truth_classes_count[i] - tp_for_thresh_per_class[i]));
+               ^~~~~~~~~~~~
+./src/detector.c:1043:15: warning: unused variable ‘class_precision’ [-Wunused-variable]
+         float class_precision = (float)tp_for_thresh_per_class[i] / ((float)tp_for_thresh_per_class[i] + (float)fp_for_thresh_per_class[i]);
+               ^~~~~~~~~~~~~~~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/layer.c -o obj/layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/compare.c -o obj/compare.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/classifier.c -o obj/classifier.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/local_layer.c -o obj/local_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/swag.c -o obj/swag.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/shortcut_layer.c -o obj/shortcut_layer.o
+./src/shortcut_layer.c: In function ‘make_shortcut_layer’:
+./src/shortcut_layer.c:22:32: warning: self-comparison always evaluates to false [-Wtautological-compare]
+     if(w != w2 || h != h2 || c != c) fprintf(stderr, " w = %d, w2 = %d, h = %d, h2 = %d, c = %d, c2 = %d \n", w, w2, h, h2, c, c2);
+                                ^~
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/activation_layer.c -o obj/activation_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/rnn_layer.c -o obj/rnn_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/gru_layer.c -o obj/gru_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/rnn.c -o obj/rnn.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/rnn_vid.c -o obj/rnn_vid.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/crnn_layer.c -o obj/crnn_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/demo.c -o obj/demo.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/tag.c -o obj/tag.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/cifar.c -o obj/cifar.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/go.c -o obj/go.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/batchnorm_layer.c -o obj/batchnorm_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/art.c -o obj/art.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/region_layer.c -o obj/region_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/reorg_layer.c -o obj/reorg_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/reorg_old_layer.c -o obj/reorg_old_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/super.c -o obj/super.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/voxel.c -o obj/voxel.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/tree.c -o obj/tree.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/yolo_layer.c -o obj/yolo_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/upsample_layer.c -o obj/upsample_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/lstm_layer.c -o obj/lstm_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/conv_lstm_layer.c -o obj/conv_lstm_layer.o
+gcc -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -c ./src/scale_channels_layer.c -o obj/scale_channels_layer.o
+In file included from ./src/scale_channels_layer.c:5:0:
+./src/scale_channels_layer.c: In function ‘make_scale_channels_layer’:
+./src/scale_channels_layer.c:16:14: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+     assert(w == 1 & h == 1);
+            ~~^~~~
+./src/scale_channels_layer.c:16:14: warning: suggest parentheses around comparison in operand of ‘&’ [-Wparentheses]
+     assert(w == 1 & h == 1);
+            ~~^~~~
+g++ -std=c++11 -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC obj/image_opencv.o obj/http_stream.o obj/gemm.o obj/utils.o obj/dark_cuda.o obj/convolutional_layer.o obj/list.o obj/image.o obj/activations.o obj/im2col.o obj/col2im.o obj/blas.o obj/crop_layer.o obj/dropout_layer.o obj/maxpool_layer.o obj/softmax_layer.o obj/data.o obj/matrix.o obj/network.o obj/connected_layer.o obj/cost_layer.o obj/parser.o obj/option_list.o obj/darknet.o obj/detection_layer.o obj/captcha.o obj/route_layer.o obj/writing.o obj/box.o obj/nightmare.o obj/normalization_layer.o obj/avgpool_layer.o obj/coco.o obj/dice.o obj/yolo.o obj/detector.o obj/layer.o obj/compare.o obj/classifier.o obj/local_layer.o obj/swag.o obj/shortcut_layer.o obj/activation_layer.o obj/rnn_layer.o obj/gru_layer.o obj/rnn.o obj/rnn_vid.o obj/crnn_layer.o obj/demo.o obj/tag.o obj/cifar.o obj/go.o obj/batchnorm_layer.o obj/art.o obj/region_layer.o obj/reorg_layer.o obj/reorg_old_layer.o obj/super.o obj/voxel.o obj/tree.o obj/yolo_layer.o obj/upsample_layer.o obj/lstm_layer.o obj/conv_lstm_layer.o obj/scale_channels_layer.o -o darknet -lm -pthread `pkg-config --libs opencv`
+g++ -shared -std=c++11 -fvisibility=hidden -DLIB_EXPORTS -Iinclude/ -I3rdparty/stb/include -DOPENCV `pkg-config --cflags opencv` -Wall -Wfatal-errors -Wno-unused-result -Wno-unknown-pragmas -fPIC -Ofast -DOPENCV -fPIC -I/usr/local/cuda/include ./obj/image_opencv.o ./obj/http_stream.o ./obj/gemm.o ./obj/utils.o ./obj/dark_cuda.o ./obj/convolutional_layer.o ./obj/list.o ./obj/image.o ./obj/activations.o ./obj/im2col.o ./obj/col2im.o ./obj/blas.o ./obj/crop_layer.o ./obj/dropout_layer.o ./obj/maxpool_layer.o ./obj/softmax_layer.o ./obj/data.o ./obj/matrix.o ./obj/network.o ./obj/connected_layer.o ./obj/cost_layer.o ./obj/parser.o ./obj/option_list.o ./obj/darknet.o ./obj/detection_layer.o ./obj/captcha.o ./obj/route_layer.o ./obj/writing.o ./obj/box.o ./obj/nightmare.o ./obj/normalization_layer.o ./obj/avgpool_layer.o ./obj/coco.o ./obj/dice.o ./obj/yolo.o ./obj/detector.o ./obj/layer.o ./obj/compare.o ./obj/classifier.o ./obj/local_layer.o ./obj/swag.o ./obj/shortcut_layer.o ./obj/activation_layer.o ./obj/rnn_layer.o ./obj/gru_layer.o ./obj/rnn.o ./obj/rnn_vid.o ./obj/crnn_layer.o ./obj/demo.o ./obj/tag.o ./obj/cifar.o ./obj/go.o ./obj/batchnorm_layer.o ./obj/art.o ./obj/region_layer.o ./obj/reorg_layer.o ./obj/reorg_old_layer.o ./obj/super.o ./obj/voxel.o ./obj/tree.o ./obj/yolo_layer.o ./obj/upsample_layer.o ./obj/lstm_layer.o ./obj/conv_lstm_layer.o ./obj/scale_channels_layer.o src/darknet_api.cpp -o mylibdarknet.so -lm -pthread `pkg-config --libs opencv` -lcudart
+src/darknet_api.cpp: In constructor ‘Detector::Detector(std::__cxx11::string, std::__cxx11::string)’:
+src/darknet_api.cpp:98:8: warning: variable ‘l’ set but not used [-Wunused-but-set-variable]
+  layer l = net.layers[net.n - 1];
+        ^
+src/darknet_api.cpp:99:6: warning: unused variable ‘j’ [-Wunused-variable]
+  int j;
+      ^
+src/darknet_api.cpp: In member function ‘std::vector<bbox_t> Detector::detect(image_t, float, bool)’:
+src/darknet_api.cpp:206:9: warning: unused variable ‘prediction’ [-Wunused-variable]
+  float *prediction = network_predict(net, X);
+         ^~~~~~~~~~
+src/darknet_api.cpp: In member function ‘std::vector<bbox_t> Detector::gpu_detect(image_t, int, int, float, bool)’:
+src/darknet_api.cpp:277:2: error: ‘CHECK_CUDA’ was not declared in this scope
+  CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+  ^~~~~~~~~~
+compilation terminated due to -Wfatal-errors.
+Makefile:152: recipe for target 'mylibdarknet.so' failed
+make: *** [mylibdarknet.so] Error 1

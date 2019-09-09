@@ -1,0 +1,4 @@
+3rdparty/pthreads/include
+3rdparty/stb/include
+include
+src
