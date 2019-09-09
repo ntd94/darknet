@@ -80,6 +80,35 @@ public:
 };
 
 
+class MultilevelDetector
+{
+	Detector* detector_128;
+	Detector* detector_256;
+	int detectorID = 0;
+	cv::Size frameSize;
+	cv::Rect roi_detect;
+public:
+	LIB_API MultilevelDetector(cv::Size _frameSize);
+	LIB_API ~MultilevelDetector();
+	LIB_API bool detect(cv::Mat matImg, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
+	// call setDetectorID everytime trackSize changes
+	void setDetectorID(int trackSize);
+
+	LIB_API bool detect(uchar* imgdata, cv::Size imgSize, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
+private:
+	bool eliminate_box(std::vector<bbox_t> &boxs, int thresh, float maxThres, float minThres);
+	bool select_best_box_to_track(std::vector<bbox_t> &boxs, bbox_t &best_box, cv::Point clickPoint, const int thresh);
+	bool is_inside(cv::Rect rect, cv::Mat mat);
+	void getRegion(cv::Point clickPoint, int trackSize);
+#ifdef DEBUG
+	void getPatch128(cv::Point clickPoint);
+	std::vector<std::string> obj_names;
+	std::vector<std::string> objects_names_from_file(std::string const filename);
+	void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names);
+#endif
+};
+
+
 #endif    // __cplusplus
 
 #endif    // YOLO_V2_CLASS_HPP

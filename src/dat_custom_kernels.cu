@@ -103,7 +103,7 @@ void getROI_blobed_gpu_kernel(unsigned char *input, int in_h, int in_w,
 // input: in, top, left, out.h, out.w
 // output: out.data
 LIB_API
-void getROI_blobed_gpu(image in, image blob_resized, int roi_top,
+void getROI_blobed_gpu(image_t in, image_t blob_resized, int roi_top,
 														 int roi_left,
 														 int roi_width,
 														 int roi_height)
