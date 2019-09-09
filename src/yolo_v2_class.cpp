@@ -86,17 +86,17 @@ int Detector::get_net_height()
 LIB_API
 std::vector<bbox_t> Detector::gpu_detect(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
-//	image_t blob_resized;
-//	blob_resized.h = get_net_height();
-//	blob_resized.w = get_net_width();
-//	blob_resized.data = new float;
-//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
-//	preprocess((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
-//	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-//	CHECK_CUDA(cudaFree(blob_resized.data));
-//	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
-//	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
-//	return detection_boxes;
+	image_t blob_resized;
+	blob_resized.h = get_net_height();
+	blob_resized.w = get_net_width();
+	blob_resized.data = new float;
+	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	preprocess((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	CHECK_CUDA(cudaFree(blob_resized.data));
+	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
+	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+	return detection_boxes;
 	std::vector<bbox_t> re;
 	return re;
 }
@@ -148,8 +148,7 @@ std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool
 }
 
 LIB_API
-MultilevelDetector::MultilevelDetector(cv::Size _frameSize):
-	frameSize(_frameSize)
+MultilevelDetector::MultilevelDetector()
 {
 	std::string weights_file = "../data/yolov3-tiny_3l_last.weights";
 	//    std::string weights_yolov3full = "../data/yolov3_final.weights";

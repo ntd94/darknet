@@ -79,16 +79,15 @@ public:
 	LIB_API std::vector<bbox_t> gpu_detect(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
 };
 
-
+#include <opencv2/opencv.hpp>
 class MultilevelDetector
 {
 	Detector* detector_128;
 	Detector* detector_256;
 	int detectorID = 0;
-	cv::Size frameSize;
 	cv::Rect roi_detect;
 public:
-	LIB_API MultilevelDetector(cv::Size _frameSize);
+	LIB_API MultilevelDetector();
 	LIB_API ~MultilevelDetector();
 	LIB_API bool detect(cv::Mat matImg, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
 	// call setDetectorID everytime trackSize changes
