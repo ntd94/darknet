@@ -38,7 +38,7 @@ struct image_t {
 #include <vector>
 #include <deque>
 #include <algorithm>
-#include <chrono>
+//#include <chrono>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -80,6 +80,7 @@ public:
 };
 
 #include <opencv2/opencv.hpp>
+#define DEBUG
 class MultilevelDetector
 {
 	Detector* detector_128;
@@ -88,6 +89,7 @@ class MultilevelDetector
 	cv::Rect roi_detect;
 public:
 	LIB_API MultilevelDetector();
+	LIB_API MultilevelDetector(std::string cfg_128, std::string cfg_256, std::string weights_file);
 	LIB_API ~MultilevelDetector();
 	LIB_API bool detect(cv::Mat matImg, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
 	// call setDetectorID everytime trackSize changes

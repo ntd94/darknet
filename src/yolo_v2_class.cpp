@@ -167,6 +167,14 @@ MultilevelDetector::MultilevelDetector()
 #endif
 }
 
+
+LIB_API
+MultilevelDetector::MultilevelDetector(std::string cfg_128, std::string cfg_256, std::string weights_file)
+{
+	detector_256 = new Detector(cfg_256, weights_file);
+	detector_128 = new Detector(cfg_128, weights_file);
+}
+
 LIB_API
 MultilevelDetector::~MultilevelDetector()
 {
