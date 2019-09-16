@@ -97,8 +97,36 @@ std::vector<bbox_t> Detector::gpu_detect(image_t img, int init_w, int init_h, fl
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
 	return detection_boxes;
-	std::vector<bbox_t> re;
-	return re;
+}
+
+LIB_API
+std::vector<bbox_t> Detector::gpu_detect_roi(image_t img, cv::Rect roi, float thresh, bool use_mean)
+{
+	// asert roi is inside img
+	assert(roi.x >= 0);
+	assert(roi.y >= 0);
+	assert(roi.x + roi.width <= img.w);
+	assert(roi.y + roi.height <= img.h);
+
+	image_t blob_resized;
+	blob_resized.h = get_net_height();
+	blob_resized.w = get_net_width();
+	blob_resized.data = new float;
+	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	getROI_blobed_gpu(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
+	assert(blob_resized.data != NULL);
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	CHECK_CUDA(cudaFree(blob_resized.data));
+	float wk = (float)roi.width / blob_resized.w, hk = (float)roi.height / blob_resized.h;
+	for (auto &i : detection_boxes) {
+		i.x *= wk;
+		i.w *= wk;
+		i.y *= hk;
+		i.h *= hk;
+		i.x += roi.x;
+		i.y += roi.y;
+	}
+	return detection_boxes;
 }
 
 LIB_API

@@ -23,7 +23,6 @@ struct bbox_t {
     unsigned int obj_id;           // class of object - from range [0, classes-1]
     unsigned int track_id;         // tracking id for video (0 - untracked, 1 - inf - tracked object)
     unsigned int frames_counter;   // counter of frames on which the object was detected
-    float x_3d, y_3d, z_3d;        // center of object (in Meters) if ZED 3D Camera is used
 };
 
 struct image_t {
@@ -65,6 +64,8 @@ LIB_API void getROI_blobed_gpu(image_t in, image_t blob_resized, int roi_top, in
 }
 #endif
 
+#include <opencv2/opencv.hpp>
+
 class Detector
 {
 	std::shared_ptr<void> detector_gpu_ptr;
@@ -77,9 +78,10 @@ public:
 
 	LIB_API std::vector<bbox_t> gpu_detect_resized(image_t img, float thresh, bool use_mean);
 	LIB_API std::vector<bbox_t> gpu_detect(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
+	LIB_API std::vector<bbox_t> gpu_detect_roi(image_t img, cv::Rect roi, float thresh = 0.2f, bool use_mean = false);
 };
 
-#include <opencv2/opencv.hpp>
+
 #define DEBUG
 class MultilevelDetector
 {
