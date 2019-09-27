@@ -235,7 +235,7 @@ bool MultilevelDetector::detect(image_t input, cv::Point clickPoint, int trackSi
 
 	std::vector<bbox_t> result_vec;
 	result_vec = roi_detector->gpu_detect_roi(input, roi_detect, 0.15f);
-	std::cout << "result_vec: " << result_vec.size() << std::endl;
+//	std::cout << "result_vec: " << result_vec.size() << std::endl;
 
 #ifdef DEBUG
 		draw_boxes(cl, result_vec,obj_names);
