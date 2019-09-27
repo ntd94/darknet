@@ -100,27 +100,24 @@ public:
 };
 
 
-#define DEBUG
+//#define DEBUG
 class MultilevelDetector
 {
-	Detector* detector_128;
-	Detector* detector_256;
+	Detector* roi_detector;
 	int detectorID = 0;
 	cv::Rect roi_detect;
 public:
 	LIB_API MultilevelDetector();
-	LIB_API MultilevelDetector(std::string cfg_128, std::string cfg_256, std::string weights_file);
+	LIB_API MultilevelDetector(std::string cfg_512, std::string weights_file);
 	LIB_API ~MultilevelDetector();
-	LIB_API bool detect(cv::Mat matImg, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
+	LIB_API bool detect(image_t input, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
 	// call setDetectorID everytime trackSize changes
 	void setDetectorID(int trackSize);
-
-	LIB_API bool detect(uchar* imgdata, cv::Size imgSize, cv::Point clickPoint, int trackSize, bbox_t &box_to_track);
 private:
-	bool eliminate_box(std::vector<bbox_t> &boxs, int thresh, float maxThres, float minThres);
-	bool select_best_box_to_track(std::vector<bbox_t> &boxs, bbox_t &best_box, cv::Point clickPoint, const int thresh);
-	bool is_inside(cv::Rect rect, cv::Mat mat);
-	void getRegion(cv::Point clickPoint, int trackSize);
+	bool eliminate_box(std::vector<bbox_t>& boxs, int trackSize);
+	bool select_best_box_to_track(std::vector<bbox_t>& boxs, bbox_t& best_box, cv::Point clickPoint, const int trackSize, bool filter = false);
+	bool is_inside(cv::Rect rect, image_t input);
+	void getRegion(cv::Point clickPoint, int trackSize, cv::Size frameSize);
 #ifdef DEBUG
 	void getPatch128(cv::Point clickPoint);
 	std::vector<std::string> obj_names;
@@ -128,7 +125,6 @@ private:
 	void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names);
 #endif
 };
-
 
 #endif    // __cplusplus
 
