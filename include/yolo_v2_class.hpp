@@ -126,23 +126,6 @@ private:
 #endif
 };
 
-class PlateOCR
-{
-        static Detector * plate_detector;
-public:
-        PlateOCR();
-        PlateOCR(std::string plate_cfg_file, std::string plate_weights_file);
-        ~PlateOCR();
-
-        static int max_plate_detect;
-        static std::string getPlateString(image_t frame, cv::cuda::GpuMat gpu_rgba_frame, bbox_t box);
-
-private:
-        static void contrastEnhance(cv::cuda::GpuMat scr, cv::cuda::GpuMat &dst, int dist = 10);
-        static double skewDetection(cv::cuda::GpuMat rgba_gpu_plate);
-
-};
-
 #endif    // __cplusplus
 
 #endif    // YOLO_V2_CLASS_HPP
