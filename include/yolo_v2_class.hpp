@@ -18,9 +18,10 @@
 #endif
 
 #include <string>
+#include <vector>
 
-class track_info_t {
-public:
+
+struct track_info_t {
 	std::string stringinfo;
 	int age;
 	float prob;
@@ -37,10 +38,11 @@ struct bbox_t {
 	{
 		return (w*h > other.w*other.h);
 	}
-	track_info_t * track_info;
-	bbox_t() {
-		track_info = new track_info_t();
-	}
+	// track_info_t * track_info;
+	// bbox_t() {
+	// 	track_info = new track_info_t();
+	// }
+	track_info_t track_info;
 };
 
 struct image_t {

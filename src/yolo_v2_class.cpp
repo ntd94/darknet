@@ -89,7 +89,6 @@ std::vector<bbox_t> Detector::gpu_detect(image_t img, int init_w, int init_h, fl
 	image_t blob_resized;
 	blob_resized.h = get_net_height();
 	blob_resized.w = get_net_width();
-	blob_resized.data = new float;
 	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	preprocess((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
@@ -111,7 +110,6 @@ std::vector<bbox_t> Detector::gpu_detect_roi(image_t img, cv::Rect roi, float th
 	image_t blob_resized;
 	blob_resized.h = get_net_height();
 	blob_resized.w = get_net_width();
-	blob_resized.data = new float;
 	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	getROI_blobed_gpu(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
 	assert(blob_resized.data != NULL);

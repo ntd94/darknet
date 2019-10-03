@@ -78,7 +78,6 @@ int main(void)
 	image_t blob_resized;
 	blob_resized.h = detector->get_net_height();
 	blob_resized.w = detector->get_net_width();
-	blob_resized.data = new float;
 //	std::cout << "output: " << blob_resized.w << "x" << blob_resized.h << std::endl;
 
 	cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) );
