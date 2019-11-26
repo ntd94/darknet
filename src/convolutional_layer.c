@@ -462,7 +462,11 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
         l.scale_v = (float*)calloc(n, sizeof(float));
     }
 
+    if(l.activation == SWISH) l.output_sigmoid = (float*)calloc(total_batch*l.outputs, sizeof(float));
+
 #ifdef GPU
+    if (l.activation == SWISH) l.output_sigmoid_gpu = cuda_make_array(l.output_sigmoid, total_batch*out_h*out_w*n);
+
     l.forward_gpu = forward_convolutional_layer_gpu;
     l.backward_gpu = backward_convolutional_layer_gpu;
     l.update_gpu = update_convolutional_layer_gpu;
@@ -548,13 +552,13 @@ convolutional_layer make_convolutional_layer(int batch, int steps, int h, int w,
     else if (l.xnor) fprintf(stderr, "convX ");
     else fprintf(stderr, "conv  ");
 
-    if(groups > 1) fprintf(stderr, "%5d/%3d ", n, groups);
-    else           fprintf(stderr, "%5d     ", n);
+    if(groups > 1) fprintf(stderr, "%5d/%4d ", n, groups);
+    else           fprintf(stderr, "%5d      ", n);
 
     if(dilation > 1) fprintf(stderr, "%2d x%2d/%2d(%1d)", size, size, stride, dilation);
     else             fprintf(stderr, "%2d x%2d/%2d   ", size, size, stride);
 
-    fprintf(stderr, "%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
+    fprintf(stderr, "%4d x%4d x%4d -> %4d x%4d x%4d %5.3f BF\n", w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
     //fprintf(stderr, "%5d/%2d %2d x%2d /%2d(%d)%4d x%4d x%4d  -> %4d x%4d x%4d %5.3f BF\n", n, groups, size, size, stride, dilation, w, h, c, l.out_w, l.out_h, l.out_c, l.bflops);
 
@@ -1029,7 +1033,8 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
                 add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
                 //activate_array(l.output, m*n*l.batch, l.activation);
-                activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
+                if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.output);
+                else activate_array_cpu_custom(l.output, m*n*l.batch, l.activation);
                 return;
 
             }
@@ -1067,9 +1072,127 @@ void forward_convolutional_layer(convolutional_layer l, network_state state)
     add_bias(l.output, l.biases, l.batch, l.n, out_h*out_w);
 
     //activate_array(l.output, m*n*l.batch, l.activation);
-    activate_array_cpu_custom(l.output, l.outputs*l.batch, l.activation);
+    if (l.activation == SWISH) activate_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.output);
+    else activate_array_cpu_custom(l.output, l.outputs*l.batch, l.activation);
 
     if(l.binary || l.xnor) swap_binary(&l);
+
+    //visualize_convolutional_layer(l, "conv_visual", NULL);
+    //wait_until_press_key_cv();
+
+    if(l.assisted_excitation && state.train) assisted_excitation_forward(l, state);
+}
+
+static box float_to_box_stride(float *f, int stride)
+{
+    box b = { 0 };
+    b.x = f[0];
+    b.y = f[1 * stride];
+    b.w = f[2 * stride];
+    b.h = f[3 * stride];
+    return b;
+}
+
+void assisted_excitation_forward(convolutional_layer l, network_state state)
+{
+    const int iteration_num = (*state.net.seen) / (state.net.batch*state.net.subdivisions);
+
+    // epoch
+    const float epoch = (float)(*state.net.seen) / state.net.train_images_num;
+
+    // calculate alpha
+    //const float alpha = (1 + cos(3.141592 * iteration_num)) / (2 * state.net.max_batches);
+    //const float alpha = (1 + cos(3.141592 * epoch)) / (2 * state.net.max_batches);
+    const float alpha = (1 + cos(3.141592 * iteration_num / state.net.max_batches)) / 2;
+
+    //printf("\n epoch = %f, alpha = %f, seen = %d, max_batches = %d, train_images_num = %d \n",
+    //    epoch, alpha, (*state.net.seen), state.net.max_batches, state.net.train_images_num);
+
+    float *a_avg = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
+    float *g = (float *)calloc(l.out_w * l.out_h * l.batch, sizeof(float));
+
+    int b;
+    int w, h, c;
+
+    l.max_boxes = state.net.num_boxes;
+    l.truths = l.max_boxes*(4 + 1);
+
+    for (b = 0; b < l.batch; ++b)
+    {
+        // calculate G
+        int t;
+        for (t = 0; t < state.net.num_boxes; ++t) {
+            box truth = float_to_box_stride(state.truth + t*(4 + 1) + b*l.truths, 1);
+            if (!truth.x) break;  // continue;
+
+            int left = floor((truth.x - truth.w / 2) * l.out_w);
+            int right = ceil((truth.x + truth.w / 2) * l.out_w);
+            int top = floor((truth.y - truth.h / 2) * l.out_h);
+            int bottom = ceil((truth.y + truth.h / 2) * l.out_h);
+
+            for (w = left; w <= right; w++) {
+                for (h = top; h < bottom; h++) {
+                    g[w + l.out_w * h + l.out_w*l.out_h*b] = 1;
+                }
+            }
+        }
+    }
+
+    for (b = 0; b < l.batch; ++b)
+    {
+        // calculate average A
+        for (w = 0; w < l.out_w; w++) {
+            for (h = 0; h < l.out_h; h++) {
+                for (c = 0; c < l.out_c; c++) {
+                    a_avg[w + l.out_w*(h + l.out_h*b)] += l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))];
+                }
+                a_avg[w + l.out_w*(h + l.out_h*b)] /= l.out_c;  // a_avg / d
+            }
+        }
+    }
+
+    // change activation
+    for (b = 0; b < l.batch; ++b)
+    {
+        for (w = 0; w < l.out_w; w++) {
+            for (h = 0; h < l.out_h; h++) {
+                for (c = 0; c < l.out_c; c++)
+                {
+                    // a = a + alpha(t) + e(c,i,j) = a + alpha(t) + g(i,j) * avg_a(i,j) / channels
+                    l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))] +=
+                        alpha *
+                        g[w + l.out_w*(h + l.out_h*b)] *
+                        a_avg[w + l.out_w*(h + l.out_h*b)];
+
+                    //l.output[w + l.out_w*(h + l.out_h*(c + l.out_c*b))] =
+                    //    alpha * g[w + l.out_w*(h + l.out_h*b)] * a_avg[w + l.out_w*(h + l.out_h*b)];
+                }
+            }
+        }
+    }
+
+    if(0)   // visualize ground truth
+    {
+#ifdef OPENCV
+        for (b = 0; b < l.batch; ++b)
+        {
+            image img = float_to_image(l.out_w, l.out_h, 1, &g[l.out_w*l.out_h*b]);
+            char buff[100];
+            sprintf(buff, "a_excitation_%d", b);
+            show_image_cv(img, buff);
+
+            image img2 = float_to_image(l.out_w, l.out_h, 1, &l.output[l.out_w*l.out_h*l.out_c*b]);
+            char buff2[100];
+            sprintf(buff2, "a_excitation_act_%d", b);
+            show_image_cv(img2, buff2);
+            wait_key_cv(5);
+        }
+        wait_until_press_key_cv();
+#endif // OPENCV
+    }
+
+    free(g);
+    free(a_avg);
 }
 
 
@@ -1080,7 +1203,8 @@ void backward_convolutional_layer(convolutional_layer l, network_state state)
     int n = l.size*l.size*l.c / l.groups;
     int k = l.out_w*l.out_h;
 
-    gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
+    if (l.activation == SWISH) gradient_array_swish(l.output, l.outputs*l.batch, l.output_sigmoid, l.delta);
+    else gradient_array(l.output, l.outputs*l.batch, l.activation, l.delta);
 
     if (l.batch_normalize) {
         backward_batchnorm_layer(l, state);
@@ -1215,3 +1339,4 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
     free_image(dc);
     return single_weights;
 }
+

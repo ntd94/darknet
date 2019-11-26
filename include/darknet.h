@@ -102,7 +102,7 @@ typedef struct tree {
 
 // activations.h
 typedef enum {
-    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU
+    LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN, SELU, SWISH
 }ACTIVATION;
 
 // parser.h
@@ -137,6 +137,7 @@ typedef enum {
     LOCAL,
     SHORTCUT,
     SCALE_CHANNELS,
+    SAM,
     ACTIVE,
     RNN,
     GRU,
@@ -208,6 +209,8 @@ struct layer {
     int side;
     int stride;
     int dilation;
+    int maxpool_depth;
+    int out_channels;
     int reverse;
     int flatten;
     int spatial;
@@ -275,6 +278,7 @@ struct layer {
     float focus;
     int classfix;
     int absolute;
+    int assisted_excitation;
 
     int onlyforward;
     int stopbackward;
@@ -339,6 +343,7 @@ struct layer {
     float *col_image;
     float * delta;
     float * output;
+    float * output_sigmoid;
     int delta_pinned;
     int output_pinned;
     float * loss;
@@ -522,6 +527,7 @@ struct layer {
     float * scale_change_gpu;
 
     float * output_gpu;
+    float * output_sigmoid_gpu;
     float * loss_gpu;
     float * delta_gpu;
     float * rand_gpu;
@@ -575,6 +581,8 @@ typedef struct network {
     int time_steps;
     int step;
     int max_batches;
+    int num_boxes;
+    int train_images_num;
     float *seq_scales;
     float *scales;
     int   *steps;
@@ -829,6 +837,7 @@ LIB_API layer* get_network_layer(network* net, int i);
 LIB_API detection *make_network_boxes(network *net, float thresh, int *num);
 LIB_API void reset_rnn(network *net);
 LIB_API float *network_predict_image(network *net, image im);
+LIB_API float *network_predict_image_letterbox(network *net, image im);
 LIB_API float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, const float iou_thresh, const int map_points, int letter_box, network *existing_net);
 LIB_API void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int calc_map, int mjpeg_port, int show_imgs);
 LIB_API void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh,
