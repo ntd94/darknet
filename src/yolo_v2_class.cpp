@@ -3,6 +3,12 @@
 
 #include "network.h"
 
+//#define DEBUG_BENCHMARK
+
+#ifdef DEBUG_BENCHMARK
+#include <chrono>
+#endif
+
 extern "C" {
 //#include "detection_layer.h"
 //#include "region_layer.h"
@@ -83,18 +89,33 @@ int Detector::get_net_height()
 	return net.h;
 }
 
+
 LIB_API
 std::vector<bbox_t> Detector::gpu_detect(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
+#ifdef DEBUG_BENCHMARK
+	auto begin = std::chrono::high_resolution_clock::now();
+#endif
 	image_t blob_resized;
 	blob_resized.h = get_net_height();
 	blob_resized.w = get_net_width();
 	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	preprocess((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+#ifdef DEBUG_BENCHMARK
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::micro> timeSpan = end - begin;
+	std::cout << "\nYOLO preprocessing: " << timeSpan.count() << std::endl;
+	begin = std::chrono::high_resolution_clock::now();
+#endif
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
 	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+#ifdef DEBUG_BENCHMARK
+	end = std::chrono::high_resolution_clock::now();
+	timeSpan = end - begin;
+	std::cout << "\nYOLO actual detection: " << timeSpan.count() << std::endl;
+#endif
 	return detection_boxes;
 }
 
@@ -313,9 +334,9 @@ bool MultilevelDetector::select_best_box_to_track(std::vector<bbox_t>& boxs, bbo
 	int distance = INT_MAX;
 	int x_center, y_center;
 	int w, h;
-	int idx_min = -1;
+	uint idx_min = -1;
 
-	for (int i = 0; i < boxs.size(); i++)
+	for (uint i = 0; i < boxs.size(); i++)
 	{
 		box = boxs[i];
 		w = box.w;
