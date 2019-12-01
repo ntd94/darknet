@@ -42,3 +42,5 @@ src/version.h
 lib/
 share/
 include/darknet/
+darknet
+uselib
