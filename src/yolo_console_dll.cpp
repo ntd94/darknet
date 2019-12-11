@@ -73,7 +73,7 @@ int main(void)
 	cudaMalloc( (void**)&input.data, input.c * input.h * input.w * sizeof(uchar));
 	std::cout << "I'm here : 2 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
-	cudaMemcpy( input.data, current_frame.data, input.c * input.h * input.w * sizeof(uchar), cudaMemcpyHostToDevice );
+	cudaMemcpy( input.data, I420.data, input.c * input.h * input.w * sizeof(uchar), cudaMemcpyHostToDevice );
 	std::cout << "I'm here : 3 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	image_t blob_resized;
@@ -88,11 +88,11 @@ int main(void)
 	std::cout << "I'm here : 5 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	// display blobed image
-	float * blobed_cpu;
-	cudaMallocHost( (void**)&blobed_cpu, 3*blob_resized.h*blob_resized.w*sizeof(float));
-	cudaMemcpy(blob_resized.data, blobed_cpu, 3*blob_resized.h*blob_resized.w*sizeof(float), cudaMemcpyDeviceToHost);
+	float * blobed_cpu_data;
+	cudaMallocHost( (void**)&blobed_cpu_data, 3*blob_resized.h*blob_resized.w*sizeof(float));
+	cudaMemcpy(blobed_cpu_data, blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float), cudaMemcpyDeviceToHost);
 	std::cout << "I'm here : 6 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
-	cv::Mat blobed_cpu_img(cv::Size(3*blob_resized.w, blob_resized.h), CV_32FC1, blobed_cpu);
+	cv::Mat blobed_cpu_img(cv::Size(blob_resized.w, 3*blob_resized.h), CV_32FC1, blobed_cpu_data);
 	blobed_cpu_img.convertTo(blobed_cpu_img, CV_8UC1, 255.0, 0 );
 	cv::imshow("blobbed", blobed_cpu_img);
 

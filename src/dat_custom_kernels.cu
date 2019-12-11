@@ -74,13 +74,17 @@ void cuda_blob_I420(unsigned char* input, float *output, int out_h, int out_w, i
 	if (threadId >= N) return;
 
 	int x = threadId % out_w;
-//	int y = threadId / out_w;
+	int y = threadId / out_w;
 
 	int size = out_h*out_w;
 
-	unsigned char Y = input[threadId];
-	unsigned char U = input[x/4 + threadId/4 + size];
-	unsigned char V = input[x/4 + threadId/4 + size + size/4];
+//	unsigned char Y = input[threadId];
+//	unsigned char U = input[x/4 + threadId/4 + size];
+//	unsigned char V = input[x/4 + threadId/4 + size + size/4];
+
+	unsigned char Y = input[x + y*out_w];
+	unsigned char U = input[y/2 * out_w/2 + x/2 + size];
+	unsigned char V = input[y/2 * out_w/2 + x/2 + size + size/4];
 
 	int C = Y - 16;
 	int D = U - 128;
