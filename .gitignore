@@ -44,3 +44,4 @@ share/
 include/darknet/
 darknet
 uselib
+backup/
