@@ -44,4 +44,9 @@ share/
 include/darknet/
 darknet
 uselib
+
+
+*.user
+darknetorigin.creator.user
+
 backup/

@@ -51,29 +51,30 @@ int main(void)
 	const float thresh = 0.15f;
 	std::vector<bbox_t> result_vec;
 
+	std::cout << "I'm here : 0" << std::endl;
 	cv::Mat current_frame = cv::imread(file_name);
-	cv::Mat temp;
-	cv::cvtColor(current_frame, temp, cv::COLOR_BGR2RGBA);
-	current_frame = temp.clone();
+	cv::resize(current_frame, current_frame, cv::Size(detector->get_net_width(), detector->get_net_height()));
+	cv::Mat I420;
+	cv::cvtColor(current_frame, I420, cv::COLOR_BGR2YUV_I420);
 
 //    result_vec = detector->detect(current_frame, thresh, false);
-
+	// input is I420, size = 1920x1620x1
 	image_t input;
-	input.c = current_frame.channels();
-	input.h = current_frame.rows;
-	input.w = current_frame.cols;
+	input.c = I420.channels();
+	input.h = I420.rows;
+	input.w = I420.cols;
 	input.data = new float;
 //	std::cout << "input: " << current_frame.cols << "x"
 //						   << current_frame.rows << "x"
 //						   << current_frame.channels() << std::endl;
 
-//	std::cout << "I'm here : 1" << std::endl;
+	std::cout << "I'm here : 1" << std::endl;
 
 	cudaMalloc( (void**)&input.data, input.c * input.h * input.w * sizeof(uchar));
-//	std::cout << "I'm here : 2" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	std::cout << "I'm here : 2 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	cudaMemcpy( input.data, current_frame.data, input.c * input.h * input.w * sizeof(uchar), cudaMemcpyHostToDevice );
-//	std::cout << "I'm here : 3" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	std::cout << "I'm here : 3 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	image_t blob_resized;
 	blob_resized.h = detector->get_net_height();
@@ -81,16 +82,26 @@ int main(void)
 //	std::cout << "output: " << blob_resized.w << "x" << blob_resized.h << std::endl;
 
 	cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) );
-//	std::cout << "I'm here : 4" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	std::cout << "I'm here : 4 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
-	preprocess((uchar*)input.data, input.h, input.w, blob_resized.data, blob_resized.h, blob_resized.w);
-//	std::cout << "I'm here : 5" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	preprocess_I420((uchar*)input.data, input.h, input.w, blob_resized.data, blob_resized.h, blob_resized.w);
+	std::cout << "I'm here : 5 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
+
+	// display blobed image
+	float * blobed_cpu;
+	cudaMallocHost( (void**)&blobed_cpu, 3*blob_resized.h*blob_resized.w*sizeof(float));
+	cudaMemcpy(blob_resized.data, blobed_cpu, 3*blob_resized.h*blob_resized.w*sizeof(float), cudaMemcpyDeviceToHost);
+	std::cout << "I'm here : 6 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	cv::Mat blobed_cpu_img(cv::Size(3*blob_resized.w, blob_resized.h), CV_32FC1, blobed_cpu);
+	blobed_cpu_img.convertTo(blobed_cpu_img, CV_8UC1, 255.0, 0 );
+	cv::imshow("blobbed", blobed_cpu_img);
+
 
 	auto detection_boxes = detector->gpu_detect_resized(blob_resized, thresh, false);
-//	std::cout << "I'm here : 6" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	std::cout << "I'm here : 7 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	cudaFree(blob_resized.data);
-//	std::cout << "I'm here : 7" << cudaGetErrorString(cudaGetLastError()) << std::endl;
+	std::cout << "I'm here : 8 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	float wk = (float)current_frame.cols / blob_resized.w, hk = (float)current_frame.rows / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
@@ -104,6 +115,7 @@ int main(void)
 //	double duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - begin1).count();
 //	std::cout << "GPU takes: " << duration1/100.0 << "miliseconds" << std::endl;
 
+	std::cout << "size of detection_boxes: " << detection_boxes.size() << std::endl;
 	draw_boxes(current_frame, detection_boxes);
 	cv::imshow("GPU", current_frame);
 	cv::waitKey();
