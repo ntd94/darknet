@@ -53,7 +53,7 @@ int main(void)
 
 	std::cout << "I'm here : 0" << std::endl;
 	cv::Mat current_frame = cv::imread(file_name);
-	cv::resize(current_frame, current_frame, cv::Size(detector->get_net_width(), detector->get_net_height()));
+//	cv::resize(current_frame, current_frame, cv::Size(detector->get_net_width(), detector->get_net_height()));
 	cv::Mat I420;
 	cv::cvtColor(current_frame, I420, cv::COLOR_BGR2YUV_I420);
 
@@ -63,10 +63,9 @@ int main(void)
 	input.c = I420.channels();
 	input.h = I420.rows;
 	input.w = I420.cols;
-	input.data = new float;
-//	std::cout << "input: " << current_frame.cols << "x"
-//						   << current_frame.rows << "x"
-//						   << current_frame.channels() << std::endl;
+	std::cout << "input: " << I420.cols << "x"
+						   << I420.rows << "x"
+						   << I420.channels() << std::endl;
 
 	std::cout << "I'm here : 1" << std::endl;
 

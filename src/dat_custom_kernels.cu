@@ -7,8 +7,18 @@
 #include "darknet.h"
 #include "network.h"
 
+/**
+  * force x in range [0..255]
+  */
+__device__
+int clamp(int x)
+{
+//	return x < 0 ? 0 : x > 255 ? 255 : x;
+	return x & 255;
+}
+
 __global__
-void cuda_blob_resize_RGBA(unsigned char* input, int in_h, int in_w, float *output, int out_h, int out_w,
+void cuda_blob_resize_kernel_RGBA(unsigned char* input, int in_h, int in_w, float *output, int out_h, int out_w,
 					  float scale_x, float scale_y, int N)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,7 +42,49 @@ void cuda_blob_resize_RGBA(unsigned char* input, int in_h, int in_w, float *outp
 }
 
 __global__
-void cuda_blob_RGBA(unsigned char* input, float *output, int out_h, int out_w, int N)
+void cuda_blob_resize_kernel_I420(unsigned char* input, int in_h, int in_w, float *output, int out_h, int out_w,
+					  float scale_x, float scale_y, int N)
+{
+	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
+	// threadIx should vary from 0 to out_w*out_h;
+	if (threadId >= N) return;
+
+	int out_x = threadId % out_w;
+	int out_y = threadId / out_w;
+
+	int in_x = out_x / scale_x;
+	int in_y = out_y / scale_y;
+	int in_size = in_h * in_w;
+
+	unsigned char Y = input[in_x + in_y * in_w];
+	unsigned char U = input[in_x/2 + in_y/2 * in_w/2 + in_size];
+	unsigned char V = input[in_x/2 + in_y/2 * in_w/2 + in_size + in_size/4];
+//	unsigned char Y = 16;
+//	unsigned char U = 128;
+//	unsigned char V = 128;
+//	printf("%d ", U);
+
+	int C = Y - 16;
+	int D = U - 128;
+	int E = V - 128;
+
+	uchar R = (298 * C           + 409 * E) >> 8;
+	uchar G = (298 * C - 100 * D - 208 * E) >> 8;
+	uchar B = (298 * C + 516 * D          ) >> 8;
+
+	R = clamp(R);
+	G = clamp(G);
+	B = clamp(B);
+
+	// input is uchar (size = 1)
+	// output is float (size = 4)
+	output[threadId                ] = R / 255.0;
+	output[threadId +   out_h*out_w] = G / 255.0;
+	output[threadId + 2*out_h*out_w] = B / 255.0;
+}
+
+__global__
+void cuda_blob_kernel_RGBA(unsigned char* input, float *output, int out_h, int out_w, int N)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 	// threadIx should vary from 0 to out_w*out_h;
@@ -48,15 +100,6 @@ void cuda_blob_RGBA(unsigned char* input, float *output, int out_h, int out_w, i
 	output[threadId + 2*out_h*out_w] = input[4*threadId + 2] / 255.0;
 }
 
-/**
-  * force x in range [0..255]
-  */
-__device__
-int clamp(int x)
-{
-//	return x < 0 ? 0 : x > 255 ? 255 : x;
-	return x & 255;
-}
 
 /**
   * brief: convert from I420 to RGB, blob, and change to [0..1]
@@ -117,13 +160,13 @@ void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int
 	int numBlock = (N + blockSize - 1) / blockSize;
 	if (in_w == out_w && in_h == out_h)
 	{
-		cuda_blob_RGBA<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
+		cuda_blob_kernel_RGBA<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
 	}
 	else
 	{
 		float scale_x = float(out_w) / in_w;
 		float scale_y = float(out_h) / in_h;
-		cuda_blob_resize_RGBA<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
+		cuda_blob_resize_kernel_RGBA<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
 												  scale_x, scale_y, N);
 	}
 	cudaDeviceSynchronize();
@@ -138,16 +181,17 @@ void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int
 	int N = out_h * out_w;
 	int blockSize = 1024;
 	int numBlock = (N + blockSize - 1) / blockSize;
-	if (in_w == out_w && in_h * 2 / 3 == out_h)
+	int in_h_rgb = in_h * 2 / 3;
+	if (in_w == out_w && in_h_rgb == out_h)
 	{
-		printf("\n\n================= HERE ===============\n\n");
 		cuda_blob_I420<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
 	}
 	else
 	{
 		float scale_x = float(out_w) / in_w;
-		float scale_y = float(out_h) / in_h;
-		cuda_blob_resize_RGBA<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
+		float scale_y = float(out_h) / in_h_rgb;
+		printf("\n\n================= HERE ===============\n\n");
+		cuda_blob_resize_kernel_I420<<<numBlock, blockSize>>>(input, in_h_rgb, in_w, output, out_h, out_w,
 												  scale_x, scale_y, N);
 	}
 	cudaDeviceSynchronize();
@@ -155,7 +199,7 @@ void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int
 
 
 __global__
-void getROI_blobed_gpu_kernel(unsigned char *input, int in_h, int in_w,
+void getROI_blobed_gpu_kernel_RGBA(unsigned char *input, int in_h, int in_w,
 									 float* output, int out_h, int out_w,
 									   int roi_top, int roi_left,
 									 int roi_width, int roi_height,
@@ -181,6 +225,46 @@ void getROI_blobed_gpu_kernel(unsigned char *input, int in_h, int in_w,
 	output[threadId + 2*out_h*out_w] = input[in_add + 2] / 255.0;
 }
 
+__global__
+void getROI_blobed_gpu_kernel_I420(unsigned char *input, int in_h, int in_w,
+									 float* output, int out_h, int out_w,
+									   int roi_top, int roi_left,
+									 int roi_width, int roi_height,
+									 float scale_x, float scale_y,
+													int N)
+{
+	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
+	// threadIx should vary from 0 to out_w*out_h;
+	if (threadId >= N) return;
+
+	int out_x = threadId % out_w;
+	int out_y = threadId / out_w;
+
+	int in_x = roi_left + out_x / scale_x;
+	int in_y = roi_top  + out_y / scale_y;
+	int in_size = in_h * in_w;
+
+	unsigned char Y = input[in_x + in_y * in_w];
+	unsigned char U = input[in_x/2 + in_y/2 * in_w/2 + in_size];
+	unsigned char V = input[in_x/2 + in_y/2 * in_w/2 + in_size + in_size/4];
+
+	int C = Y - 16;
+	int D = U - 128;
+	int E = V - 128;
+
+	uchar R = (298 * C           + 409 * E) >> 8;
+	uchar G = (298 * C - 100 * D - 208 * E) >> 8;
+	uchar B = (298 * C + 516 * D          ) >> 8;
+
+	R = clamp(R);
+	G = clamp(G);
+	B = clamp(B);
+
+	// output is float (size = 4)
+	output[threadId                ] = R / 255.0;
+	output[threadId +   out_h*out_w] = G / 255.0;
+	output[threadId + 2*out_h*out_w] = B / 255.0;
+}
 
 // input: in, top, left, out.h, out.w
 // output: out.data
@@ -198,12 +282,36 @@ void getROI_blobed_gpu_RGBA(image_t in, image_t blob_resized, int roi_top,
 	int N = blob_resized.h * blob_resized.w;
 	int blockSize = 1024;
 	int numBlock = (N + blockSize - 1) / blockSize;
-	getROI_blobed_gpu_kernel<<<numBlock, blockSize>>>((unsigned char*)in.data, in.h,  in.w,
-																	 blob_resized.data, blob_resized.h, blob_resized.w,
-																	  roi_top, roi_left,
-																	roi_width, roi_height,
-													  scale_x, scale_y,
-																			   N);
+	getROI_blobed_gpu_kernel_RGBA<<<numBlock, blockSize>>>((unsigned char*)in.data, in.h,  in.w,
+															blob_resized.data, blob_resized.h, blob_resized.w,
+															roi_top, roi_left,
+															roi_width, roi_height,
+															scale_x, scale_y,
+															N);
+
+	cudaDeviceSynchronize();
+}
+
+LIB_API
+void getROI_blobed_gpu_I420(image_t in, image_t blob_resized, int roi_top,
+														 int roi_left,
+														 int roi_width,
+														 int roi_height)
+{
+	float scale_x = float(blob_resized.w) / roi_width;
+	float scale_y = float(blob_resized.h) / roi_height;
+	// check ROI inside image
+	// cudamalloc output
+	// actual blob
+	int N = blob_resized.h * blob_resized.w;
+	int blockSize = 1024;
+	int numBlock = (N + blockSize - 1) / blockSize;
+	getROI_blobed_gpu_kernel_I420<<<numBlock, blockSize>>>((unsigned char*)in.data, in.h,  in.w,
+															blob_resized.data, blob_resized.h, blob_resized.w,
+															roi_top, roi_left,
+															roi_width, roi_height,
+															scale_x, scale_y,
+															N);
 
 	cudaDeviceSynchronize();
 }
