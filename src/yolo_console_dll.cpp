@@ -2,7 +2,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 using namespace std;
-
+#define ROI
 void draw_boxes(cv::Mat mat_img, std::vector<bbox_t> result_vec)
 {
 	std::vector<std::string> obj_names {
@@ -83,7 +83,12 @@ int main(void)
 	cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) );
 	std::cout << "I'm here : 4 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
+#ifdef ROI
+	cv::Rect roi(640, 360, 640, 360);
+	getROI_blobed_gpu_I420(input, blob_resized, roi.y, roi.x, roi.width, roi.height);
+#else
 	preprocess_I420((uchar*)input.data, input.h, input.w, blob_resized.data, blob_resized.h, blob_resized.w);
+#endif
 	std::cout << "I'm here : 5 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	// display blobed image
@@ -102,19 +107,22 @@ int main(void)
 	cudaFree(blob_resized.data);
 	std::cout << "I'm here : 8 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
+	std::cout << "size of detection_boxes: " << detection_boxes.size() << std::endl;
+#ifdef ROI
+	cv::rectangle(current_frame, roi, cv::Scalar(255, 0, 255), 2);
+	float wk = (float)roi.width / blob_resized.w, hk = (float)roi.height / blob_resized.h;
+	for (auto &i : detection_boxes) {
+		i.x *= wk;
+		i.w *= wk;
+		i.y *= hk;
+		i.h *= hk;
+		i.x += roi.x;
+		i.y += roi.y;
+	}
+#else
 	float wk = (float)current_frame.cols / blob_resized.w, hk = (float)current_frame.rows / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
-//	return detection_boxes;
-
-//	result_vec = detector->gpu_detect(input, current_frame.cols, current_frame.rows, thresh, false);
-//	auto begin1 = std::chrono::high_resolution_clock::now();
-//	for(int i = 0; i < 100; i++)
-//		result_vec = detector->gpu_detect(input, current_frame.cols, current_frame.rows, thresh, false);
-//	auto end1 = std::chrono::high_resolution_clock::now();
-//	double duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - begin1).count();
-//	std::cout << "GPU takes: " << duration1/100.0 << "miliseconds" << std::endl;
-
-	std::cout << "size of detection_boxes: " << detection_boxes.size() << std::endl;
+#endif
 	draw_boxes(current_frame, detection_boxes);
 	cv::imshow("GPU", current_frame);
 	cv::waitKey();

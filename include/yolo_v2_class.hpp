@@ -106,6 +106,8 @@ public:
 	LIB_API int get_net_height();
 	LIB_API int get_net_width();
 	LIB_API std::vector<bbox_t> gpu_detect_resized(image_t img, float thresh, bool use_mean);
+private:
+	image_t blob_resized;
 };
 
 #endif    // __cplusplus

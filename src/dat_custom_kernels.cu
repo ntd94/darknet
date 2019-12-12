@@ -190,7 +190,6 @@ void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int
 	{
 		float scale_x = float(out_w) / in_w;
 		float scale_y = float(out_h) / in_h_rgb;
-		printf("\n\n================= HERE ===============\n\n");
 		cuda_blob_resize_kernel_I420<<<numBlock, blockSize>>>(input, in_h_rgb, in_w, output, out_h, out_w,
 												  scale_x, scale_y, N);
 	}
@@ -300,13 +299,14 @@ void getROI_blobed_gpu_I420(image_t in, image_t blob_resized, int roi_top,
 {
 	float scale_x = float(blob_resized.w) / roi_width;
 	float scale_y = float(blob_resized.h) / roi_height;
+	int in_h_rgb = in.h * 2 / 3;
 	// check ROI inside image
 	// cudamalloc output
 	// actual blob
 	int N = blob_resized.h * blob_resized.w;
 	int blockSize = 1024;
 	int numBlock = (N + blockSize - 1) / blockSize;
-	getROI_blobed_gpu_kernel_I420<<<numBlock, blockSize>>>((unsigned char*)in.data, in.h,  in.w,
+	getROI_blobed_gpu_kernel_I420<<<numBlock, blockSize>>>((unsigned char*)in.data, in_h_rgb,  in.w,
 															blob_resized.data, blob_resized.h, blob_resized.w,
 															roi_top, roi_left,
 															roi_width, roi_height,

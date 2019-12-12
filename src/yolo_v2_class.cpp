@@ -56,8 +56,12 @@ Detector::Detector(std::string cfg_filename, std::string weight_filename)
 	set_batch_network(&net, batchSize);
 	fuse_conv_batchnorm(net);
 
-//	printf("\n\n network created: %dx%d\n\n", net.w, net.h);
+	// pre-allocated for blob_resized
+	blob_resized.h = get_net_height();
+	blob_resized.w = get_net_width();
+	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 
+//	printf("\n\n network created: %dx%d\n\n", net.w, net.h);
 }
 
 LIB_API
@@ -65,6 +69,7 @@ Detector::~Detector()
 {
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
 	free_network(net);
+	CHECK_CUDA(cudaFree(blob_resized.data));
 }
 
 //LIB_API
@@ -96,10 +101,10 @@ std::vector<bbox_t> Detector::gpu_detect_RGBA(image_t img, int init_w, int init_
 #ifdef DEBUG_BENCHMARK
 	auto begin = std::chrono::high_resolution_clock::now();
 #endif
-	image_t blob_resized;
-	blob_resized.h = get_net_height();
-	blob_resized.w = get_net_width();
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+//	image_t blob_resized;
+//	blob_resized.h = get_net_height();
+//	blob_resized.w = get_net_width();
+//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	preprocess_RGBA((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 #ifdef DEBUG_BENCHMARK
 	auto end = std::chrono::high_resolution_clock::now();
@@ -108,7 +113,7 @@ std::vector<bbox_t> Detector::gpu_detect_RGBA(image_t img, int init_w, int init_
 	begin = std::chrono::high_resolution_clock::now();
 #endif
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-	CHECK_CUDA(cudaFree(blob_resized.data));
+//	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
 #ifdef DEBUG_BENCHMARK
@@ -128,14 +133,14 @@ std::vector<bbox_t> Detector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, flo
 	assert(roi.x + roi.width <= img.w);
 	assert(roi.y + roi.height <= img.h);
 
-	image_t blob_resized;
-	blob_resized.h = get_net_height();
-	blob_resized.w = get_net_width();
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+//	image_t blob_resized;
+//	blob_resized.h = get_net_height();
+//	blob_resized.w = get_net_width();
+//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	getROI_blobed_gpu_RGBA(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
 	assert(blob_resized.data != NULL);
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-	CHECK_CUDA(cudaFree(blob_resized.data));
+//	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)roi.width / blob_resized.w, hk = (float)roi.height / blob_resized.h;
 	for (auto &i : detection_boxes) {
 		i.x *= wk;
@@ -154,10 +159,10 @@ std::vector<bbox_t> Detector::gpu_detect_I420(image_t img, int init_w, int init_
 #ifdef DEBUG_BENCHMARK
 	auto begin = std::chrono::high_resolution_clock::now();
 #endif
-	image_t blob_resized;
-	blob_resized.h = get_net_height();
-	blob_resized.w = get_net_width();
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+//	image_t blob_resized;
+//	blob_resized.h = get_net_height();
+//	blob_resized.w = get_net_width();
+//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	preprocess_I420((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 #ifdef DEBUG_BENCHMARK
 	auto end = std::chrono::high_resolution_clock::now();
@@ -166,7 +171,7 @@ std::vector<bbox_t> Detector::gpu_detect_I420(image_t img, int init_w, int init_
 	begin = std::chrono::high_resolution_clock::now();
 #endif
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-	CHECK_CUDA(cudaFree(blob_resized.data));
+//	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
 #ifdef DEBUG_BENCHMARK
@@ -186,14 +191,14 @@ std::vector<bbox_t> Detector::gpu_detect_roi_I420(image_t img, cv::Rect roi, flo
 	assert(roi.x + roi.width <= img.w);
 	assert(roi.y + roi.height <= img.h);
 
-	image_t blob_resized;
-	blob_resized.h = get_net_height();
-	blob_resized.w = get_net_width();
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
-	getROI_blobed_gpu_RGBA(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
+//	image_t blob_resized;
+//	blob_resized.h = get_net_height();
+//	blob_resized.w = get_net_width();
+//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	getROI_blobed_gpu_I420(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
 	assert(blob_resized.data != NULL);
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-	CHECK_CUDA(cudaFree(blob_resized.data));
+//	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)roi.width / blob_resized.w, hk = (float)roi.height / blob_resized.h;
 	for (auto &i : detection_boxes) {
 		i.x *= wk;
