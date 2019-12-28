@@ -51,6 +51,7 @@ int main(void)
 	const float thresh = 0.15f;
 	std::vector<bbox_t> result_vec;
 
+
 	std::cout << "I'm here : 0" << std::endl;
 	cv::Mat current_frame = cv::imread(file_name);
 //	cv::resize(current_frame, current_frame, cv::Size(detector->get_net_width(), detector->get_net_height()));
@@ -66,14 +67,26 @@ int main(void)
 	std::cout << "input: " << I420.cols << "x"
 						   << I420.rows << "x"
 						   << I420.channels() << std::endl;
-
 	std::cout << "I'm here : 1" << std::endl;
+
 
 	cudaMalloc( (void**)&input.data, input.c * input.h * input.w * sizeof(uchar));
 	std::cout << "I'm here : 2 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	cudaMemcpy( input.data, I420.data, input.c * input.h * input.w * sizeof(uchar), cudaMemcpyHostToDevice );
 	std::cout << "I'm here : 3 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
+
+#ifdef ROI
+	cv::Rect roi(640, 360, 640, 360);
+#endif
+	result_vec = detector->gpu_detect_roi_I420(input, roi, thresh, false);
+//	result_vec = detector->gpu_detect_I420(input, current_frame.cols, current_frame.rows, thresh, false);
+	cudaFree(input.data);
+	cv::rectangle(current_frame, roi, cv::Scalar(255, 0, 255), 2);
+	draw_boxes(current_frame, result_vec);
+	cv::imshow("GPU", current_frame);
+	cv::waitKey();
+	return 0;
 
 	image_t blob_resized;
 	blob_resized.h = detector->get_net_height();
@@ -84,7 +97,6 @@ int main(void)
 	std::cout << "I'm here : 4 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 #ifdef ROI
-	cv::Rect roi(640, 360, 640, 360);
 	getROI_blobed_gpu_I420(input, blob_resized, roi.y, roi.x, roi.width, roi.height);
 #else
 	preprocess_I420((uchar*)input.data, input.h, input.w, blob_resized.data, blob_resized.h, blob_resized.w);
@@ -92,13 +104,13 @@ int main(void)
 	std::cout << "I'm here : 5 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
 
 	// display blobed image
-	float * blobed_cpu_data;
-	cudaMallocHost( (void**)&blobed_cpu_data, 3*blob_resized.h*blob_resized.w*sizeof(float));
-	cudaMemcpy(blobed_cpu_data, blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float), cudaMemcpyDeviceToHost);
-	std::cout << "I'm here : 6 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
-	cv::Mat blobed_cpu_img(cv::Size(blob_resized.w, 3*blob_resized.h), CV_32FC1, blobed_cpu_data);
-	blobed_cpu_img.convertTo(blobed_cpu_img, CV_8UC1, 255.0, 0 );
-	cv::imshow("blobbed", blobed_cpu_img);
+//	float * blobed_cpu_data;
+//	cudaMallocHost( (void**)&blobed_cpu_data, 3*blob_resized.h*blob_resized.w*sizeof(float));
+//	cudaMemcpy(blobed_cpu_data, blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float), cudaMemcpyDeviceToHost);
+//	std::cout << "I'm here : 6 " << cudaGetErrorString(cudaGetLastError()) << std::endl;
+//	cv::Mat blobed_cpu_img(cv::Size(blob_resized.w, 3*blob_resized.h), CV_32FC1, blobed_cpu_data);
+//	blobed_cpu_img.convertTo(blobed_cpu_img, CV_8UC1, 255.0, 0 );
+//	cv::imshow("blobbed", blobed_cpu_img);
 
 
 	auto detection_boxes = detector->gpu_detect_resized(blob_resized, thresh, false);

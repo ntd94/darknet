@@ -128,10 +128,10 @@ LIB_API
 std::vector<bbox_t> Detector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, float thresh, bool use_mean)
 {
 	// asert roi is inside img
-	assert(roi.x >= 0);
-	assert(roi.y >= 0);
-	assert(roi.x + roi.width <= img.w);
-	assert(roi.y + roi.height <= img.h);
+	if (roi.x >= 0) return std::vector<bbox_t>{};
+	if (roi.y >= 0) return std::vector<bbox_t>{};
+	if (roi.x + roi.width <= img.w) return std::vector<bbox_t>{};
+	if (roi.y + roi.height <= img.h) return std::vector<bbox_t>{};
 
 //	image_t blob_resized;
 //	blob_resized.h = get_net_height();
@@ -156,40 +156,21 @@ std::vector<bbox_t> Detector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, flo
 LIB_API
 std::vector<bbox_t> Detector::gpu_detect_I420(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
-#ifdef DEBUG_BENCHMARK
-	auto begin = std::chrono::high_resolution_clock::now();
-#endif
-//	image_t blob_resized;
-//	blob_resized.h = get_net_height();
-//	blob_resized.w = get_net_width();
-//	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
 	preprocess_I420((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
-#ifdef DEBUG_BENCHMARK
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double, std::micro> timeSpan = end - begin;
-	std::cout << "\nYOLO preprocessing: " << timeSpan.count() << std::endl;
-	begin = std::chrono::high_resolution_clock::now();
-#endif
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
-//	CHECK_CUDA(cudaFree(blob_resized.data));
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
 	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
-#ifdef DEBUG_BENCHMARK
-	end = std::chrono::high_resolution_clock::now();
-	timeSpan = end - begin;
-	std::cout << "\nYOLO actual detection: " << timeSpan.count() << std::endl;
-#endif
 	return detection_boxes;
 }
 
 LIB_API
 std::vector<bbox_t> Detector::gpu_detect_roi_I420(image_t img, cv::Rect roi, float thresh, bool use_mean)
 {
-	// asert roi is inside img
-	assert(roi.x >= 0);
-	assert(roi.y >= 0);
-	assert(roi.x + roi.width <= img.w);
-	assert(roi.y + roi.height <= img.h);
+	// assert roi is inside img
+	if (roi.x < 0) return std::vector<bbox_t>{};
+	if (roi.y < 0) return std::vector<bbox_t>{};
+	if (roi.x + roi.width >= img.w)	 return std::vector<bbox_t>{};
+	if (roi.y + roi.height >= img.h) return std::vector<bbox_t>{};
 
 //	image_t blob_resized;
 //	blob_resized.h = get_net_height();
