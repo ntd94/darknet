@@ -35,6 +35,16 @@ extern "C" {
 #include <algorithm>
 #include <string>
 #include <cmath>
+#include <opencv2/opencv.hpp>
+
+LIB_API image_t allocateBlob(int net_h, int net_w)
+{
+	image_t blob_resized;
+	blob_resized.h = net_h;
+	blob_resized.w = net_w;
+	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	return blob_resized;
+}
 
 LIB_API
 Detector::Detector(std::string cfg_filename, std::string weight_filename)
@@ -193,12 +203,49 @@ std::vector<bbox_t> Detector::gpu_detect_roi_I420(image_t img, cv::Rect roi, flo
 }
 
 LIB_API
+std::vector<bbox_t> Detector::gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+{
+
+	preprocess_RGB((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
+	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+
+	return detection_boxes;
+}
+
+LIB_API
+std::vector<bbox_t> Detector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, float thresh, bool use_mean)
+{
+	// asert roi is inside img
+	if (roi.x >= 0) return std::vector<bbox_t>{};
+	if (roi.y >= 0) return std::vector<bbox_t>{};
+	if (roi.x + roi.width <= img.w) return std::vector<bbox_t>{};
+	if (roi.y + roi.height <= img.h) return std::vector<bbox_t>{};
+
+	getROI_blobed_gpu_RGB(img, blob_resized, roi.y, roi.x, roi.width, roi.height);
+	assert(blob_resized.data != NULL);
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	float wk = (float)roi.width / blob_resized.w, hk = (float)roi.height / blob_resized.h;
+	for (auto &i : detection_boxes) {
+		i.x *= wk;
+		i.w *= wk;
+		i.y *= hk;
+		i.h *= hk;
+		i.x += roi.x;
+		i.y += roi.y;
+	}
+	return detection_boxes;
+}
+
+LIB_API
 std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool use_mean)
 {
 	// img.data is on device memory
-	network &net = *static_cast<network *>(detector_gpu_ptr.get());
+	network* net = static_cast<network *>(detector_gpu_ptr.get());
 
-	layer l = net.layers[net.n - 1];
+	layer l = net->layers[net->n - 1];
 
 	float *X = img.data;
 
@@ -207,7 +254,7 @@ std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool
 	int nboxes = 0;
 	int letterbox = 0;
 	float hier_thresh = 0.5;
-	detection *dets = get_network_boxes(&net, img.w, img.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
+	detection *dets = get_network_boxes(net, img.w, img.h, thresh, hier_thresh, 0, 1, &nboxes, letterbox);
 	if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
 
 	std::vector<bbox_t> bbox_vec;
@@ -237,3 +284,5 @@ std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool
 
 	return bbox_vec;
 }
+
+

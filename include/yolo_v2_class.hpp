@@ -76,11 +76,15 @@ extern "C" {
 #ifdef GPU
 
 LIB_API void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
+LIB_API void preprocess_RGB (unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void getROI_blobed_gpu_RGBA(image_t in, image_t blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);
+LIB_API void getROI_blobed_gpu_RGB (image_t in, image_t blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);
 LIB_API void getROI_blobed_gpu_I420(image_t in, image_t blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);
-//float *network_predict_gpu_custom(network net, float *device_input);
+LIB_API void preprocess_RGB_python (char* data, int in_h, int in_w, float*output, int out_h, int out_w);
 
+
+LIB_API image_t allocateBlob(int net_h, int net_w);
 #endif
 #ifdef __cplusplus
 }
@@ -101,6 +105,9 @@ public:
 
 	LIB_API std::vector<bbox_t> gpu_detect_I420(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
 	LIB_API std::vector<bbox_t> gpu_detect_roi_I420(image_t img, cv::Rect roi, float thresh = 0.2f, bool use_mean = false);
+
+	LIB_API std::vector<bbox_t> gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
+	LIB_API std::vector<bbox_t> gpu_detect_roi_RGB(image_t img, cv::Rect roi, float thresh = 0.2f, bool use_mean = false);
 
 public:
 	LIB_API int get_net_height();

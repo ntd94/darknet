@@ -26,7 +26,7 @@ extern "C" {
 
 //void preprocess(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 //void getROI_blobed_gpu(image in, image blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);
-LIB_API float *network_predict_gpu_custom(network net, float *device_input);
+LIB_API float *network_predict_gpu_custom(network* net, float *device_input);
 
 #endif
 #ifdef __cplusplus
