@@ -55,7 +55,7 @@ void cuda_blob_resize_kernel_RGB(unsigned char* input, int in_h, int in_w, float
 	int in_x = out_x / scale_x;
 	int in_y = out_y / scale_y;
 
-	// RGBA
+	// RGB
 	int in_add = (in_y * in_w + in_x)*3;
 //	printf("\ncuda_blob_resize_kernel_RGB %d", in_add);
 
@@ -217,28 +217,21 @@ void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int
 LIB_API
 void preprocess_RGB(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
 {
-	printf("\npreprocess_RGB 1 %d", cudaGetLastError());
-	//    CHECK_CUDA(cudaMalloc( (void**)&output, 3*out_h*out_w*sizeof(float) ));
-	// remember to cudaMalloc
-//	printf("\nPREPROCESSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n");
 	int N = out_h * out_w;
 	int blockSize = 1024;
 	int numBlock = (N + blockSize - 1) / blockSize;
 	if (in_w == out_w && in_h == out_h)
 	{
-		printf("\npreprocess_RGB 2 %d", cudaGetLastError());
 		cuda_blob_kernel_RGB<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
 	}
 	else
 	{
-		printf("\npreprocess_RGB 3 %d", cudaGetLastError());
 		float scale_x = float(out_w) / in_w;
 		float scale_y = float(out_h) / in_h;
 		cuda_blob_resize_kernel_RGB<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
 												  scale_x, scale_y, N);
 	}
 	cudaDeviceSynchronize();
-	printf("\npreprocess_RGB 4 %d", cudaGetLastError());
 }
 
 LIB_API
@@ -472,9 +465,9 @@ float *network_predict_gpu_custom(network* net, float *device_input)
 {
 	printf("\n network_predict_gpu_custom CUDA last error: %d", cudaGetLastError());
 	printf("\nnetwork_predict_gpu_custom 1");
-	printf("\n gpu_index = ", net->gpu_index);
 	if (net->gpu_index != cuda_get_device())
 		cuda_set_device(cuda_get_device());
+	printf("\n gpu_index = ", net->gpu_index);
 	int size = get_network_input_size(*net) * net->batch;
 	printf("\nnetwork_predict_gpu_custom 2");
 	network_state state;

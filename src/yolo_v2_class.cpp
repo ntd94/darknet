@@ -37,13 +37,36 @@ extern "C" {
 #include <cmath>
 #include <opencv2/opencv.hpp>
 
-LIB_API image_t allocateBlob(int net_h, int net_w)
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
+
+LIB_API image_t allocateImageOnDevice(int h, int w, int c, int type)
 {
 	image_t blob_resized;
-	blob_resized.h = net_h;
-	blob_resized.w = net_w;
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	blob_resized.h = h;
+	blob_resized.w = w;
+	blob_resized.c = c;
+	switch (type) {
+	case 0:
+		CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, blob_resized.c*blob_resized.h*blob_resized.w*sizeof(unsigned char) ));
+		break;
+	case 1:
+		CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, blob_resized.c*blob_resized.h*blob_resized.w*sizeof(float) ));
+		break;
+	default:
+		assert(0 == 1);
+	}
+//	printf("\nallocateBlob %d", cudaGetLastError());
 	return blob_resized;
+}
+
+LIB_API void copyHostToDevice(void* dst, void* src, int size)
+{
+//	printf("\ncopyHostToDevice %s", cudaGetErrorString(cudaGetLastError()));
+//	printf("\ncopyHostToDevice %d %d %d", dst, src, size);
+	CHECK_CUDA(cudaMemcpy( (void*)dst, (const void*) src, static_cast<size_t>(size), cudaMemcpyHostToDevice));
+	return;
 }
 
 LIB_API

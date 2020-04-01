@@ -59,7 +59,9 @@ class DETECTION(Structure):
                 ("prob", POINTER(c_float)),
                 ("mask", POINTER(c_float)),
                 ("objectness", c_float),
-                ("sort_class", c_int)]
+                ("sort_class", c_int),
+                ("uc", POINTER(c_float)),
+                ("points", c_int)]
 
 
 class IMAGE(Structure):
@@ -119,7 +121,7 @@ if os.name == "nt":
             lib = CDLL(winGPUdll, RTLD_GLOBAL)
             print("Environment variables indicated a CPU run, but we didn't find `"+winNoGPUdll+"`. Trying a GPU run anyway.")
 else:
-    lib = CDLL("./libdarknet.so", RTLD_GLOBAL)
+    lib = CDLL("/home/dat/source/dat-darknet/libdarknet.so", RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -141,6 +143,8 @@ predict.restype = POINTER(c_float)
 if hasGPU:
     set_gpu = lib.cuda_set_device
     set_gpu.argtypes = [c_int]
+
+# init_cpu = lib.init_cpu
 
 make_image = lib.make_image
 make_image.argtypes = [c_int, c_int, c_int]
@@ -202,6 +206,33 @@ predict_image = lib.network_predict_image
 predict_image.argtypes = [c_void_p, IMAGE]
 predict_image.restype = POINTER(c_float)
 
+predict_image_letterbox = lib.network_predict_image_letterbox
+predict_image_letterbox.argtypes = [c_void_p, IMAGE]
+predict_image_letterbox.restype = POINTER(c_float)
+
+predict_image_custom = lib.network_predict_gpu_custom
+predict_image_custom.argtypes = [c_void_p, IMAGE]
+predict_image_custom.restype = POINTER(c_float)
+
+allocate_mems = lib.allocateImageOnDevice
+allocate_mems.argtypes = [c_int, c_int, c_int, c_int]
+allocate_mems.restype = IMAGE
+
+copyHostToDevice = lib.copyHostToDevice
+copyHostToDevice.argtypes = [c_void_p, c_void_p, c_int]
+copyHostToDevice.restype = c_void_p
+
+# import numpy as np
+# import numpy.ctypeslib as npct
+
+# Tell numpy what kind of pointer we want to use, load the dll
+# ucharPtr = npct.ndpointer(dtype=np.uint8, ndim=1, flags='CONTIGUOUS')
+
+# LIB_API void preprocess_RGB (unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
+preprocessRGB = lib.preprocess_RGB
+preprocessRGB.argtypes = [POINTER(c_ubyte), c_int, c_int, POINTER(c_float), c_int, c_int]
+preprocessRGB.restype = c_void_p   
+
 def array_to_image(arr):
     import numpy as np
     # need to return old values to avoid python freeing memory
@@ -238,6 +269,20 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     if debug: print("freed image")
     return ret
 
+def detect_custom(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+    """
+    Performs the meat of the detection
+    """
+    #pylint: disable= C0321
+    # im = load_image(image, 0, 0)
+    # preprocess, return im as blobed image
+
+    if debug: print("Loaded image")
+    ret = detect_image(net, meta, im, thresh, hier_thresh, nms, debug)
+    free_image(im)
+    if debug: print("freed image")
+    return ret
+
 def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
     #import cv2
     #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
@@ -251,9 +296,12 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     pnum = pointer(num)
     if debug: print("Assigned pnum")
     predict_image(net, im)
+    letter_box = 0
+    #predict_image_letterbox(net, im)
+    #letter_box = 1
     if debug: print("did prediction")
-    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, 0) # OpenCV
-    dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, 0)
+    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
+    dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, letter_box)
     if debug: print("Got dets")
     num = pnum[0]
     if debug: print("got zeroth index of pnum")
@@ -286,6 +334,56 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     if debug: print("freed detections")
     return res
 
+def detect_image_custom(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False):
+    #import cv2
+    #custom_image_bgr = cv2.imread(image) # use: detect(,,imagePath,)
+    #custom_image = cv2.cvtColor(custom_image_bgr, cv2.COLOR_BGR2RGB)
+    #custom_image = cv2.resize(custom_image,(lib.network_width(net), lib.network_height(net)), interpolation = cv2.INTER_LINEAR)
+    #import scipy.misc
+    #custom_image = scipy.misc.imread(image)
+    #im, arr = array_to_image(custom_image)		# you should comment line below: free_image(im)
+    num = c_int(0)
+    if debug: print("Assigned num")
+    pnum = pointer(num)
+    if debug: print("Assigned pnum")
+    predict_image_custom(net, im)
+    letter_box = 0
+    #predict_image_letterbox(net, im)
+    #letter_box = 1
+    if debug: print("did prediction")
+    #dets = get_network_boxes(net, custom_image_bgr.shape[1], custom_image_bgr.shape[0], thresh, hier_thresh, None, 0, pnum, letter_box) # OpenCV
+    dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum, letter_box)
+    if debug: print("Got dets")
+    num = pnum[0]
+    if debug: print("got zeroth index of pnum")
+    if nms:
+        do_nms_sort(dets, num, meta.classes, nms)
+    if debug: print("did sort")
+    res = []
+    if debug: print("about to range")
+    for j in range(num):
+        if debug: print("Ranging on "+str(j)+" of "+str(num))
+        if debug: print("Classes: "+str(meta), meta.classes, meta.names)
+        for i in range(meta.classes):
+            if debug: print("Class-ranging on "+str(i)+" of "+str(meta.classes)+"= "+str(dets[j].prob[i]))
+            if dets[j].prob[i] > 0:
+                b = dets[j].bbox
+                if altNames is None:
+                    nameTag = meta.names[i]
+                else:
+                    nameTag = altNames[i]
+                if debug:
+                    print("Got bbox", b)
+                    print(nameTag)
+                    print(dets[j].prob[i])
+                    print((b.x, b.y, b.w, b.h))
+                res.append((nameTag, dets[j].prob[i], (b.x, b.y, b.w, b.h)))
+    if debug: print("did range")
+    res = sorted(res, key=lambda x: -x[1])
+    if debug: print("did sort")
+    free_detections(dets, num)
+    if debug: print("freed detections")
+    return res
 
 netMain = None
 metaMain = None
@@ -436,3 +534,4 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
 
 if __name__ == "__main__":
     print(performDetect())
+

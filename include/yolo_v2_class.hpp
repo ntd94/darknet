@@ -84,7 +84,9 @@ LIB_API void getROI_blobed_gpu_I420(image_t in, image_t blob_resized, int roi_to
 LIB_API void preprocess_RGB_python (char* data, int in_h, int in_w, float*output, int out_h, int out_w);
 
 
-LIB_API image_t allocateBlob(int net_h, int net_w);
+LIB_API image_t allocateImageOnDevice(int h, int w, int c, int type);
+LIB_API void copyHostToDevice(void* dst, void* src, int size);
+
 #endif
 #ifdef __cplusplus
 }
