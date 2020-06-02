@@ -5,6 +5,7 @@
 3rdparty/stb/include/stb_image_write.h
 include/darknet.h
 include/yolo_v2_class.hpp
+include/yolo_v3_class.hpp
 scripts/kmeansiou.c
 src/activation_kernels.cu
 src/activation_layer.c
