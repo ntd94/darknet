@@ -145,3 +145,4 @@ src/yolo_console_dll.cpp
 src/yolo_layer.c
 src/yolo_layer.h
 src/yolo_v2_class.cpp
+src/dat_custom_kernels.cu

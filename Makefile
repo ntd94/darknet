@@ -16,10 +16,10 @@ USE_CPP=0
 DEBUG=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
-      -gencode arch=compute_35,code=sm_35 \
-      -gencode arch=compute_50,code=[sm_50,compute_50] \
-      -gencode arch=compute_52,code=[sm_52,compute_52] \
-	    -gencode arch=compute_61,code=[sm_61,compute_61]
+	  -gencode arch=compute_35,code=sm_35 \
+	  -gencode arch=compute_50,code=[sm_50,compute_50] \
+	  -gencode arch=compute_52,code=[sm_52,compute_52] \
+			-gencode arch=compute_61,code=[sm_61,compute_61]
 
 OS := $(shell uname)
 
@@ -146,40 +146,43 @@ endif
 OBJS = $(addprefix $(OBJDIR), $(OBJ))
 DEPS = $(wildcard src/*.h) Makefile include/darknet.h
 
-all: $(OBJDIR) backup results setchmod $(EXEC) $(LIBNAMESO) $(APPNAMESO)
+all: $(OBJDIR) backup results setchmod $(EXEC) $(LIBNAMESO) $(APPNAMESO) $(LIBNAMEDATSO)
 
 ifeq ($(LIBSO), 1)
 CFLAGS+= -fPIC
 
+$(LIBNAMEDATSO): $(OBJDIR) $(OBJS) include/yolo_v3_class.hpp src/yolo_v3_class.cpp
+		$(CPP) -shared -std=c++11 -DLIB_EXPORTS $(COMMON) $(CFLAGS) $(OBJS) src/yolo_v3_class.cpp -o $@ $(LDFLAGS)
+
 $(LIBNAMESO): $(OBJDIR) $(OBJS) include/yolo_v2_class.hpp src/yolo_v2_class.cpp
-	$(CPP) -shared -std=c++11 -fvisibility=hidden -DLIB_EXPORTS $(COMMON) $(CFLAGS) $(OBJS) src/yolo_v2_class.cpp -o $@ $(LDFLAGS)
+		$(CPP) -shared -std=c++11 -fvisibility=hidden -DLIB_EXPORTS $(COMMON) $(CFLAGS) $(OBJS) src/yolo_v2_class.cpp -o $@ $(LDFLAGS)
 
 $(APPNAMESO): $(LIBNAMESO) include/yolo_v2_class.hpp src/yolo_console_dll.cpp
-	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -o $@ src/yolo_console_dll.cpp $(LDFLAGS) -L ./ -l:$(LIBNAMESO)
+		$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -o $@ src/yolo_console_dll.cpp $(LDFLAGS) -L ./ -l:$(LIBNAMESO)
 endif
 
 $(EXEC): $(OBJS)
-	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+		$(CPP) -std=c++11 $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(OBJDIR)%.o: %.c $(DEPS)
-	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
+		$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)%.o: %.cpp $(DEPS)
-	$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -c $< -o $@
+		$(CPP) -std=c++11 $(COMMON) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)%.o: %.cu $(DEPS)
-	$(NVCC) -std=c++11 $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
+		$(NVCC) -std=c++11 $(ARCH) $(COMMON) --compiler-options "$(CFLAGS)" -c $< -o $@
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+		mkdir -p $(OBJDIR)
 backup:
-	mkdir -p backup
+		mkdir -p backup
 results:
-	mkdir -p results
+		mkdir -p results
 setchmod:
-	chmod +x *.sh
+		chmod +x *.sh
 
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(EXEC) $(LIBNAMESO) $(APPNAMESO)
+		rm -rf $(OBJS) $(EXEC) $(LIBNAMESO) $(APPNAMESO) $(LIBNAMEDATSO)

@@ -1,5 +1,6 @@
 #include "dat_custom.h"
-#include "yolo_v2_class.hpp"
+//#include "yolo_v2_class.hpp"
+#include "yolo_v3_class.hpp"
 //#include "cuda.h"
 #include "cuda_runtime_api.h"
 #include "cuda_runtime.h"

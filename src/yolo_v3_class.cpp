@@ -70,7 +70,7 @@ LIB_API void copyHostToDevice(void* dst, void* src, int size)
 }
 
 LIB_API
-Detector::Detector(std::string cfg_filename, std::string weight_filename)
+YoloDetector::YoloDetector(std::string cfg_filename, std::string weight_filename)
 {
 	detector_gpu_ptr = std::make_shared<network>();
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
@@ -98,7 +98,7 @@ Detector::Detector(std::string cfg_filename, std::string weight_filename)
 }
 
 LIB_API
-Detector::~Detector()
+YoloDetector::~YoloDetector()
 {
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
 	free_network(net);
@@ -114,14 +114,14 @@ void free_image(image_t m)
 }
 
 LIB_API
-int Detector::get_net_width()
+int YoloDetector::get_net_width()
 {
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
 	return net.w;
 }
 
 LIB_API
-int Detector::get_net_height()
+int YoloDetector::get_net_height()
 {
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
 	return net.h;
@@ -129,7 +129,7 @@ int Detector::get_net_height()
 
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_RGBA(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_RGBA(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
 #ifdef DEBUG_BENCHMARK
 	auto begin = std::chrono::high_resolution_clock::now();
@@ -158,7 +158,7 @@ std::vector<bbox_t> Detector::gpu_detect_RGBA(image_t img, int init_w, int init_
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, float thresh, bool use_mean)
 {
 	// asert roi is inside img
 	if (roi.x >= 0) return std::vector<bbox_t>{};
@@ -187,7 +187,7 @@ std::vector<bbox_t> Detector::gpu_detect_roi_RGBA(image_t img, cv::Rect roi, flo
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_I420(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_I420(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
 	preprocess_I420((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
@@ -197,7 +197,7 @@ std::vector<bbox_t> Detector::gpu_detect_I420(image_t img, int init_w, int init_
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_roi_I420(image_t img, cv::Rect roi, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_roi_I420(image_t img, cv::Rect roi, float thresh, bool use_mean)
 {
 	// assert roi is inside img
 	if (roi.x < 0) return std::vector<bbox_t>{};
@@ -226,7 +226,7 @@ std::vector<bbox_t> Detector::gpu_detect_roi_I420(image_t img, cv::Rect roi, flo
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
 
 	preprocess_RGB((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
@@ -239,7 +239,7 @@ std::vector<bbox_t> Detector::gpu_detect_RGB(image_t img, int init_w, int init_h
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, float thresh, bool use_mean)
 {
 	// asert roi is inside img
 	if (roi.x >= 0) return std::vector<bbox_t>{};
@@ -263,7 +263,7 @@ std::vector<bbox_t> Detector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, floa
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_NV12(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_NV12(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
 	preprocess_NV12((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 
@@ -275,7 +275,7 @@ std::vector<bbox_t> Detector::gpu_detect_NV12(image_t img, int init_w, int init_
 }
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_preprocessed(uchar* blobbed_data, int init_w, int init_h, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_preprocessed(uchar* blobbed_data, int init_w, int init_h, float thresh, bool use_mean)
 {
 	CHECK_CUDA(cudaMemcpy(blobbed_data, blob_resized.data,
 						  blob_resized.h * blob_resized.w * 3 * sizeof(float), cudaMemcpyDeviceToDevice));
@@ -288,7 +288,7 @@ std::vector<bbox_t> Detector::gpu_detect_preprocessed(uchar* blobbed_data, int i
 
 
 LIB_API
-std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool use_mean)
+std::vector<bbox_t> YoloDetector::gpu_detect_resized(image_t img, float thresh, bool use_mean)
 {
 	// img.data is on device memory
 	network* net = static_cast<network *>(detector_gpu_ptr.get());

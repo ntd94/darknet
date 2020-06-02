@@ -1,5 +1,5 @@
-#ifndef YOLO_V2_CLASS_HPP
-#define YOLO_V2_CLASS_HPP
+#ifndef YOLO_V3_CLASS_HPP
+#define YOLO_V3_CLASS_HPP
 
 #ifndef LIB_API
 #ifdef LIB_EXPORTS
@@ -95,13 +95,13 @@ LIB_API void copyHostToDevice(void* dst, void* src, int size);
 
 #include <opencv2/opencv.hpp>
 
-class Detector
+class YoloDetector
 {
 	std::shared_ptr<void> detector_gpu_ptr;
 	float nms = 0.4f;
 public:
-	LIB_API Detector(std::string cfg_filename, std::string weight_filename);
-	LIB_API ~Detector();
+	LIB_API YoloDetector(std::string cfg_filename, std::string weight_filename);
+	LIB_API ~YoloDetector();
 
 	LIB_API std::vector<bbox_t> gpu_detect_RGBA(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
 	LIB_API std::vector<bbox_t> gpu_detect_roi_RGBA(image_t img, cv::Rect roi, float thresh = 0.2f, bool use_mean = false);
@@ -126,4 +126,4 @@ private:
 
 #endif    // __cplusplus
 
-#endif    // YOLO_V2_CLASS_HPP
+#endif    // YOLO_V3_CLASS_HPP
