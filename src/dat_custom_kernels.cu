@@ -191,6 +191,48 @@ void cuda_blob_I420(unsigned char* input, float *output, int out_h, int out_w, i
 	output[threadId + 2*out_h*out_w] = B / 255.0;
 }
 
+__global__ void cuda_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
+{
+	int index  = blockIdx.x * blockDim.x + threadIdx.x;
+	int numel  = dstWidth * dstHeight;
+	int imgLen = srcWidth * srcHeight;
+
+	//
+	//===== Convert i420 color format to RGBA of current pixel
+	//
+	if( index < numel )
+	{
+		int     row = index / dstWidth,
+				col = index - row * dstWidth;
+
+		int     imgCol = (col * srcWidth) / dstWidth,
+				imgRow = (row * srcHeight) / dstHeight;
+
+		int     imgIndex = imgRow * srcWidth + imgCol;
+
+		int     yidx = imgIndex,
+				uidx = (((imgRow >> 1) * (srcWidth >> 1) + (imgCol >> 1)) << 1) + imgLen;
+		int     vidx = uidx + 1;
+
+		// i420 to rgba
+		int     y = (int)d_nv12[yidx] - 16,
+				u = (int)d_nv12[uidx] - 128,
+				v = (int)d_nv12[vidx] - 128;
+
+		float b = 1.164 * y           + 2.018*u;
+		float g = 1.164 * y - 0.813*v - 0.391*u;
+		float r = 1.164 * y + 1.596*v          ;
+
+		b /= 255.0;
+		g /= 255.0;
+		r /= 255.0;
+
+		d_rgb[index          ] = (r < 0)? 0 : ((r > 1.0)? 1.0 : r);
+		d_rgb[index + numel  ] = (g < 0)? 0 : ((g > 1.0)? 1.0 : g);
+		d_rgb[index + numel*2] = (b < 0)? 0 : ((b > 1.0)? 1.0 : b);
+	}
+}
+
 LIB_API
 void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
 {
@@ -212,6 +254,50 @@ void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int
 												  scale_x, scale_y, N);
 	}
 	cudaDeviceSynchronize();
+}
+
+#define THREAD_PER_BLOCK 512
+cudaError_t gpu_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
+{
+	if( d_nv12 == NULL || d_rgb == NULL )
+		return cudaErrorInvalidDevicePointer;
+
+	if( (srcWidth < 0) || (srcHeight < 0) )
+		return cudaErrorInvalidValue;
+
+	if( (dstWidth < 0) || (dstHeight < 0) )
+		return cudaErrorInvalidValue;
+
+	int numel = dstWidth * dstHeight;
+	cuda_nv12ToResizedRGBBlob<<<(numel+THREAD_PER_BLOCK-1) / THREAD_PER_BLOCK, THREAD_PER_BLOCK>>>( d_nv12, d_rgb, srcWidth, srcHeight, dstWidth, dstHeight );
+	cudaDeviceSynchronize();
+
+	return cudaSuccess;
+}
+
+
+LIB_API
+void preprocess_NV12(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
+{
+	gpu_nv12ToResizedRGBBlob(input, output, in_w, in_h, out_w, out_h);
+	//    CHECK_CUDA(cudaMalloc( (void**)&output, 3*out_h*out_w*sizeof(float) ));
+	// remember to cudaMalloc
+//	printf("\nPREPROCESSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n");
+//	int N = out_h * out_w;
+//	int blockSize = 1024;
+//	int numBlock = (N + blockSize - 1) / blockSize;
+//	if (in_w == out_w && in_h == out_h)
+//	{
+//		cuda_blob_kernel_NV12<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
+//	}
+//	else
+//	{
+//		float scale_x = float(out_w) / in_w;
+//		float scale_y = float(out_h) / in_h;
+//		cuda_blob_resize_kernel_RGBA<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
+//												  scale_x, scale_y, N);
+//	}
+//	cudaDeviceSynchronize();
 }
 
 LIB_API
@@ -463,13 +549,13 @@ void getROI_blobed_gpu_I420(image_t in, image_t blob_resized, int roi_top,
 LIB_API
 float *network_predict_gpu_custom(network* net, float *device_input)
 {
-	printf("\n network_predict_gpu_custom CUDA last error: %d", cudaGetLastError());
-	printf("\nnetwork_predict_gpu_custom 1");
+//	printf("\n network_predict_gpu_custom CUDA last error: %d", cudaGetLastError());
+//	printf("\nnetwork_predict_gpu_custom 1");
 	if (net->gpu_index != cuda_get_device())
 		cuda_set_device(cuda_get_device());
-	printf("\n gpu_index = ", net->gpu_index);
+//	printf("\n gpu_index = %d", net->gpu_index);
 	int size = get_network_input_size(*net) * net->batch;
-	printf("\nnetwork_predict_gpu_custom 2");
+//	printf("\nnetwork_predict_gpu_custom 2");
 	network_state state;
 	state.index = 0;
 	state.net = *net;
@@ -481,12 +567,12 @@ float *network_predict_gpu_custom(network* net, float *device_input)
 	state.truth = 0;
 	state.train = 0;
 	state.delta = 0;
-	printf("\nnetwork_predict_gpu_custom 3");
+//	printf("\nnetwork_predict_gpu_custom 3");
 	forward_network_gpu(*net, state);
-	printf("\nnetwork_predict_gpu_custom 4");
+//	printf("\nnetwork_predict_gpu_custom 4");
 
 	float *out = get_network_output_gpu(*net);
-	printf("\nnetwork_predict_gpu_custom 5");
+//	printf("\nnetwork_predict_gpu_custom 5");
 	//cuda_free(state.input);   // will be freed in the free_network()
 	return out;
 }

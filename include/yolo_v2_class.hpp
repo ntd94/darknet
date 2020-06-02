@@ -76,6 +76,7 @@ extern "C" {
 #ifdef GPU
 
 LIB_API void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
+LIB_API void preprocess_NV12(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void preprocess_RGB (unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void getROI_blobed_gpu_RGBA(image_t in, image_t blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);
@@ -110,6 +111,10 @@ public:
 
 	LIB_API std::vector<bbox_t> gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
 	LIB_API std::vector<bbox_t> gpu_detect_roi_RGB(image_t img, cv::Rect roi, float thresh = 0.2f, bool use_mean = false);
+
+	LIB_API std::vector<bbox_t> gpu_detect_NV12(image_t img, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
+
+	LIB_API std::vector<bbox_t> gpu_detect_preprocessed(uchar* blobbed_data, int init_w, int init_h, float thresh = 0.2, bool use_mean = false);
 
 public:
 	LIB_API int get_net_height();

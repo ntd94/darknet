@@ -263,6 +263,31 @@ std::vector<bbox_t> Detector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, floa
 }
 
 LIB_API
+std::vector<bbox_t> Detector::gpu_detect_NV12(image_t img, int init_w, int init_h, float thresh, bool use_mean)
+{
+	preprocess_NV12((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
+	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+
+	return detection_boxes;
+}
+
+LIB_API
+std::vector<bbox_t> Detector::gpu_detect_preprocessed(uchar* blobbed_data, int init_w, int init_h, float thresh, bool use_mean)
+{
+	CHECK_CUDA(cudaMemcpy(blobbed_data, blob_resized.data,
+						  blob_resized.h * blob_resized.w * 3 * sizeof(float), cudaMemcpyDeviceToDevice));
+	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
+	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
+	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+
+	return detection_boxes;
+}
+
+
+LIB_API
 std::vector<bbox_t> Detector::gpu_detect_resized(image_t img, float thresh, bool use_mean)
 {
 	// img.data is on device memory
