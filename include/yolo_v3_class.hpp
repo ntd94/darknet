@@ -76,7 +76,7 @@ extern "C" {
 #ifdef GPU
 
 LIB_API void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
-LIB_API void preprocess_NV12(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
+LIB_API void preprocess_NV12_hello(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void preprocess_RGB (unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void preprocess_I420(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w);
 LIB_API void getROI_blobed_gpu_RGBA(image_t in, image_t blob_resized, int roi_top, int roi_left, int roi_width, int roi_height);

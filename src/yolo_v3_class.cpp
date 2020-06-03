@@ -228,7 +228,6 @@ std::vector<bbox_t> YoloDetector::gpu_detect_roi_I420(image_t img, cv::Rect roi,
 LIB_API
 std::vector<bbox_t> YoloDetector::gpu_detect_RGB(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
-
 	preprocess_RGB((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
@@ -265,7 +264,19 @@ std::vector<bbox_t> YoloDetector::gpu_detect_roi_RGB(image_t img, cv::Rect roi, 
 LIB_API
 std::vector<bbox_t> YoloDetector::gpu_detect_NV12(image_t img, int init_w, int init_h, float thresh, bool use_mean)
 {
-	preprocess_NV12((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+//	cv::cuda::GpuMat gpumat1 (cv::Size(img.w, img.h * 3/2), CV_8UC1, (uchar*)img.data);
+//	cv::Mat mat1(gpumat1);
+//	cv::imwrite("before_blob.jpg", mat1);
+	preprocess_NV12_hello((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+//	assert(cudaSuccess == cudaGetLastError());
+//	cv::cuda::GpuMat gpumat (cv::Size(blob_resized.w, blob_resized.h * 3), CV_32FC1, blob_resized.data);
+//	cv::Mat mat(gpumat);
+//	cv::Mat ucharmat;
+//	mat *= 255.0;
+//	mat.convertTo(ucharmat, CV_8UC1);
+//	cv::imwrite("blob.jpg", ucharmat);
+//	cv::imshow("mat", mat);
+//	cv::waitKey();
 
 	auto detection_boxes = gpu_detect_resized(blob_resized, thresh, use_mean);
 	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;

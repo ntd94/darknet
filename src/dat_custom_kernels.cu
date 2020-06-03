@@ -18,6 +18,12 @@ int clamp(int x)
 	return x & 255;
 }
 
+__device__
+float clamp(float x)
+{
+	return x < 0.0f ? 0.0f : x > 255.0f ? 255.0f : x;
+}
+
 __global__
 void cuda_blob_resize_kernel_RGBA(unsigned char* input, int in_h, int in_w, float *output, int out_h, int out_w,
 					  float scale_x, float scale_y, int N)
@@ -192,14 +198,13 @@ void cuda_blob_I420(unsigned char* input, float *output, int out_h, int out_w, i
 	output[threadId + 2*out_h*out_w] = B / 255.0;
 }
 
-__global__ void cuda_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
+__global__ void cuda_nv12ToResizedRGBBlob(unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
 {
 	int index  = blockIdx.x * blockDim.x + threadIdx.x;
 	int numel  = dstWidth * dstHeight;
 	int imgLen = srcWidth * srcHeight;
-
 	//
-	//===== Convert i420 color format to RGBA of current pixel
+	//===== Convert i420 color format to RGB of current pixel
 	//
 	if( index < numel )
 	{
@@ -216,21 +221,35 @@ __global__ void cuda_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d
 		int     vidx = uidx + 1;
 
 		// i420 to rgba
-		int     y = (int)d_nv12[yidx] - 16,
-				u = (int)d_nv12[uidx] - 128,
-				v = (int)d_nv12[vidx] - 128;
+//		int     y = (int)d_nv12[yidx] - 16,
+//				u = (int)d_nv12[uidx] - 128,
+//				v = (int)d_nv12[vidx] - 128;
 
-		float b = 1.164 * y           + 2.018*u;
-		float g = 1.164 * y - 0.813*v - 0.391*u;
-		float r = 1.164 * y + 1.596*v          ;
+		float   y = (float)d_nv12[yidx]/255.0 - 16.0/255.0,
+				u = (float)d_nv12[uidx]/255.0 - 0.5,
+				v = (float)d_nv12[vidx]/255.0 - 0.5;
 
-		b /= 255.0;
-		g /= 255.0;
-		r /= 255.0;
+//		float b = 1.164 * y           + 2.018*u;
+//		float g = 1.164 * y - 0.813*v - 0.391*u;
+//		float r = 1.164 * y + 1.596*v          ;
+
+		float b = 1.0 * y             + 1.13983*u;
+		float g = 1.0 * y - 0.39465*v - 0.58060*u;
+		float r = 1.0 * y + 2.03211*v            ;
+
+
+//		b = clamp(b); // 0.0 <= b <= 255.0
+//		g = clamp(g);
+//		r = clamp(r);
+
+//		b /= 255.0;
+//		g /= 255.0;
+//		r /= 255.0;
 
 		d_rgb[index          ] = (r < 0)? 0 : ((r > 1.0)? 1.0 : r);
 		d_rgb[index + numel  ] = (g < 0)? 0 : ((g > 1.0)? 1.0 : g);
 		d_rgb[index + numel*2] = (b < 0)? 0 : ((b > 1.0)? 1.0 : b);
+
 	}
 }
 
@@ -258,7 +277,7 @@ void preprocess_RGBA(unsigned char* input, int in_h, int in_w, float*output, int
 }
 
 #define THREAD_PER_BLOCK 512
-cudaError_t gpu_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
+cudaError_t gpu_nv12ToResizedRGBBlob(unsigned char *d_nv12, float *d_rgb, int srcWidth, int srcHeight, int dstWidth, int dstHeight )
 {
 	if( d_nv12 == NULL || d_rgb == NULL )
 		return cudaErrorInvalidDevicePointer;
@@ -270,35 +289,17 @@ cudaError_t gpu_nv12ToResizedRGBBlob( const unsigned char *d_nv12, float *d_rgb,
 		return cudaErrorInvalidValue;
 
 	int numel = dstWidth * dstHeight;
-	cuda_nv12ToResizedRGBBlob<<<(numel+THREAD_PER_BLOCK-1) / THREAD_PER_BLOCK, THREAD_PER_BLOCK>>>( d_nv12, d_rgb, srcWidth, srcHeight, dstWidth, dstHeight );
+//	cuda_nv12ToResizedRGBBlob<<<(numel+THREAD_PER_BLOCK-1) / THREAD_PER_BLOCK, THREAD_PER_BLOCK>>>( d_nv12, d_rgb, srcWidth, srcHeight, dstWidth, dstHeight );
+	cuda_nv12ToResizedRGBBlob<<<(numel+512-1) / 512, 512>>>( d_nv12, d_rgb, srcWidth, srcHeight, dstWidth, dstHeight );
 	cudaDeviceSynchronize();
 
 	return cudaSuccess;
 }
 
-
 LIB_API
-void preprocess_NV12(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
+void preprocess_NV12_hello(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
 {
-	gpu_nv12ToResizedRGBBlob(input, output, in_w, in_h, out_w, out_h);
-	//    CHECK_CUDA(cudaMalloc( (void**)&output, 3*out_h*out_w*sizeof(float) ));
-	// remember to cudaMalloc
-//	printf("\nPREPROCESSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n");
-//	int N = out_h * out_w;
-//	int blockSize = 1024;
-//	int numBlock = (N + blockSize - 1) / blockSize;
-//	if (in_w == out_w && in_h == out_h)
-//	{
-//		cuda_blob_kernel_NV12<<<numBlock, blockSize>>>(input, output, out_h, out_w, N);
-//	}
-//	else
-//	{
-//		float scale_x = float(out_w) / in_w;
-//		float scale_y = float(out_h) / in_h;
-//		cuda_blob_resize_kernel_RGBA<<<numBlock, blockSize>>>(input, in_h, in_w, output, out_h, out_w,
-//												  scale_x, scale_y, N);
-//	}
-//	cudaDeviceSynchronize();
+	assert(cudaSuccess == gpu_nv12ToResizedRGBBlob(input, output, in_w, in_h, out_w, out_h));
 }
 
 LIB_API
