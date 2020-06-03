@@ -297,7 +297,7 @@ cudaError_t gpu_nv12ToResizedRGBBlob(unsigned char *d_nv12, float *d_rgb, int sr
 }
 
 LIB_API
-void preprocess_NV12_hello(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
+void preprocess_NV12_hell(unsigned char* input, int in_h, int in_w, float*output, int out_h, int out_w)
 {
 	assert(cudaSuccess == gpu_nv12ToResizedRGBBlob(input, output, in_w, in_h, out_w, out_h));
 }

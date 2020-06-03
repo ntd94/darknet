@@ -997,6 +997,23 @@ det_num_pair* network_predict_batch(network *net, image im, int batch_size, int 
     return pdets;
 }
 
+#include "dat_custom.h"
+det_num_pair* network_predict_batch_custom(network *net, float* blobdata, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter)
+{
+	network_predict_gpu_custom(net, blobdata);
+	det_num_pair *pdets = (struct det_num_pair *)calloc(batch_size, sizeof(det_num_pair));
+	int num;
+	int batch;
+	for(batch=0; batch < batch_size; batch++){
+		detection *dets = make_network_boxes_batch(net, thresh, &num, batch);
+		fill_network_boxes_batch(net, w, h, thresh, hier, map, relative, dets, letter, batch);
+		pdets[batch].num = num;
+		pdets[batch].dets = dets;
+	}
+	return pdets;
+}
+
+
 float *network_predict_image_letterbox(network *net, image im)
 {
     //image imr = letterbox_image(im, net->w, net->h);

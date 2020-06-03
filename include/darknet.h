@@ -958,6 +958,9 @@ LIB_API float *network_predict(network net, float *input);
 LIB_API float *network_predict_ptr(network *net, float *input);
 LIB_API detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num, int letter);
 LIB_API det_num_pair* network_predict_batch(network *net, image im, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter);
+/* dat */
+LIB_API det_num_pair* network_predict_batch_custom(network *net, float* blobdata, int batch_size, int w, int h, float thresh, float hier, int *map, int relative, int letter);
+
 LIB_API void free_detections(detection *dets, int n);
 LIB_API void free_batch_detections(det_num_pair *det_num_pairs, int n);
 LIB_API void fuse_conv_batchnorm(network net);

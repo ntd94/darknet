@@ -70,7 +70,8 @@ LIB_API void copyHostToDevice(void* dst, void* src, int size)
 }
 
 LIB_API
-YoloDetector::YoloDetector(std::string cfg_filename, std::string weight_filename)
+YoloDetector::YoloDetector(std::string cfg_filename, std::string weight_filename, int batch)
+	: m_batch_size(batch)
 {
 	detector_gpu_ptr = std::make_shared<network>();
 	network &net = *static_cast<network *>(detector_gpu_ptr.get());
@@ -80,19 +81,18 @@ YoloDetector::YoloDetector(std::string cfg_filename, std::string weight_filename
 	char *cfgfile = const_cast<char *>(cfg_filename.data());
 	char *weightfile = const_cast<char *>(weight_filename.data());
 
-	int batchSize = 1;
 	int time_steps = 0;  // don't know the meaning of this parameter yet!
-	net = parse_network_cfg_custom(cfgfile, batchSize, time_steps);
+	net = parse_network_cfg_custom(cfgfile, m_batch_size, time_steps);
 	if (weightfile) {
 		load_weights(&net, weightfile);
 	}
-	set_batch_network(&net, batchSize);
+	set_batch_network(&net, m_batch_size);
 	fuse_conv_batchnorm(net);
 
 	// pre-allocated for blob_resized
 	blob_resized.h = get_net_height();
 	blob_resized.w = get_net_width();
-	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, 3*blob_resized.h*blob_resized.w*sizeof(float) ));
+	CHECK_CUDA(cudaMalloc( (void**)&blob_resized.data, m_batch_size*3*blob_resized.h*blob_resized.w*sizeof(float) ));
 
 //	printf("\n\n network created: %dx%d\n\n", net.w, net.h);
 }
@@ -267,7 +267,7 @@ std::vector<bbox_t> YoloDetector::gpu_detect_NV12(image_t img, int init_w, int i
 //	cv::cuda::GpuMat gpumat1 (cv::Size(img.w, img.h * 3/2), CV_8UC1, (uchar*)img.data);
 //	cv::Mat mat1(gpumat1);
 //	cv::imwrite("before_blob.jpg", mat1);
-	preprocess_NV12_hello((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
+	preprocess_NV12_hell((uchar*)img.data, img.h, img.w, blob_resized.data, blob_resized.h, blob_resized.w);
 //	assert(cudaSuccess == cudaGetLastError());
 //	cv::cuda::GpuMat gpumat (cv::Size(blob_resized.w, blob_resized.h * 3), CV_32FC1, blob_resized.data);
 //	cv::Mat mat(gpumat);
@@ -284,6 +284,22 @@ std::vector<bbox_t> YoloDetector::gpu_detect_NV12(image_t img, int init_w, int i
 
 	return detection_boxes;
 }
+
+LIB_API
+std::vector<std::vector<bbox_t>> YoloDetector::gpu_detect_batch_NV12(std::vector<image_t> imgs, int init_w, int init_h, float thresh, bool use_mean)
+{
+	for(int b = 0; b < m_batch_size; b++)
+		preprocess_NV12_hell((uchar*)imgs.at(b).data, imgs.at(b).h, imgs.at(b).w,
+							 blob_resized.data + b*3*blob_resized.h*blob_resized.w, blob_resized.h, blob_resized.w);
+
+	auto detection_boxes_vec = gpu_detect_resized_batch(blob_resized, thresh, use_mean);
+	float wk = (float)init_w / blob_resized.w, hk = (float)init_h / blob_resized.h;
+	for (std::vector<bbox_t>& detection_boxes : detection_boxes_vec)
+	for (auto &i : detection_boxes) i.x *= wk, i.w *= wk, i.y *= hk, i.h *= hk;
+
+	return detection_boxes_vec;
+}
+
 
 LIB_API
 std::vector<bbox_t> YoloDetector::gpu_detect_preprocessed(uchar* blobbed_data, int init_w, int init_h, float thresh, bool use_mean)
@@ -344,4 +360,52 @@ std::vector<bbox_t> YoloDetector::gpu_detect_resized(image_t img, float thresh, 
 	return bbox_vec;
 }
 
+LIB_API
+std::vector<std::vector<bbox_t> > YoloDetector::gpu_detect_resized_batch(image_t img, float thresh, bool use_mean)
+{
+	std::vector<std::vector<bbox_t> > ret;
+	// img.data is on device memory
+	network* net = static_cast<network *>(detector_gpu_ptr.get());
 
+	layer l = net->layers[net->n - 1];
+
+	float *X = img.data;
+
+	int letterbox = 0;
+	float hier_thresh = 0.5;
+	det_num_pair* all_detection = network_predict_batch_custom(net, img.data, m_batch_size, img.w, img.h, thresh, hier_thresh, 0, 1, letterbox);
+
+
+	for(int batch=0; batch < m_batch_size; batch++) {
+		detection *dets = all_detection[batch].dets;
+
+		if (nms) do_nms_sort(dets, all_detection[batch].num, l.classes, nms);
+		std::vector<bbox_t> bbox_vec;
+
+		for (int i = 0; i < all_detection[batch].num; ++i) {
+			box b = dets[i].bbox;
+			int const obj_id = max_index(dets[i].prob, l.classes);
+			float const prob = dets[i].prob[obj_id];
+
+			if (prob > thresh)
+			{
+				bbox_t bbox;
+				bbox.x = std::max((double)0, (b.x - b.w / 2.)*img.w);
+				bbox.y = std::max((double)0, (b.y - b.h / 2.)*img.h);
+				bbox.w = b.w*img.w;
+				bbox.h = b.h*img.h;
+				bbox.obj_id = obj_id;
+				bbox.prob = prob;
+				bbox.track_id = 0;
+				bbox.frames_counter = 0;
+
+				bbox_vec.push_back(bbox);
+			}
+		}
+
+
+		ret.push_back(bbox_vec);
+	}
+	free_batch_detections(all_detection, m_batch_size);
+	return ret;
+}
