@@ -57,7 +57,7 @@ void *cuda_get_context()
 
 void check_error(cudaError_t status)
 {
-	cudaError_t status2 = cudaGetLastError();
+    cudaError_t status2 = cudaGetLastError();
     if (status != cudaSuccess)
     {
         const char *s = cudaGetErrorString(status);

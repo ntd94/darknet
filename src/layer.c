@@ -74,6 +74,11 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
     if (l.map)                free(l.map);
     if (l.rand)               free(l.rand);
     if (l.cost)               free(l.cost);
+    if (l.labels && !l.detection) free(l.labels);
+    if (l.cos_sim)            free(l.cos_sim);
+    if (l.exp_cos_sim)        free(l.exp_cos_sim);
+    if (l.p_constrastive)     free(l.p_constrastive);
+    if (l.embedding_output)   free(l.embedding_output);
     if (l.state)              free(l.state);
     if (l.prev_state)         free(l.prev_state);
     if (l.forgot_state)       free(l.forgot_state);
@@ -196,6 +201,7 @@ void free_layer_custom(layer l, int keep_cudnn_desc)
         if (l.activation_input_gpu)    cuda_free(l.activation_input_gpu), l.activation_input_gpu = NULL;
     }
     if (l.delta_gpu && (l.optimized_memory < 1 || l.keep_delta_gpu && l.optimized_memory < 3)) cuda_free(l.delta_gpu), l.delta_gpu = NULL;
+    if (l.cos_sim_gpu)             cuda_free(l.cos_sim_gpu);
     if (l.rand_gpu)                cuda_free(l.rand_gpu);
     if (l.squared_gpu)             cuda_free(l.squared_gpu);
     if (l.norms_gpu)               cuda_free(l.norms_gpu);
